@@ -8,7 +8,7 @@ import (
 )
 
 func Connection() (*gorm.DB, error) {
-	dsn := "host=localhost user=postgres password=root dbname=postgres port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+	dsn := "host=localhost user=postgres password=root dbname=updated-job-portal port=5432 sslmode=disable TimeZone=Asia/Shanghai"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
@@ -19,6 +19,7 @@ func Connection() (*gorm.DB, error) {
 
 		return nil, err
 	}
+
 	err = db.Migrator().AutoMigrate(&models.Company{})
 	if err != nil {
 

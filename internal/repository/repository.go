@@ -23,7 +23,7 @@ type UserRepo interface {
 	ViewCompanies(ctx context.Context) ([]models.Company, error)
 	ViewCompanyById(ctx context.Context, cid uint64) (models.Company, error)
 
-	CreateJob(ctx context.Context, jobData models.Jobs) (models.Jobs, error)
+	CreateJob(ctx context.Context, jobData models.Jobs) (models.ResponseJobId, error)
 	FindJob(ctx context.Context, cid uint64) ([]models.Jobs, error)
 	FindAllJobs(ctx context.Context) ([]models.Jobs, error)
 	ViewJobDetailsBy(ctx context.Context, jid uint64) (models.Jobs, error)

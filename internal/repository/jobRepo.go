@@ -11,7 +11,14 @@ import (
 
 func (r *Repo) ViewJobDetailsBy(ctx context.Context, jid uint64) (models.Jobs, error) {
 	var jobData models.Jobs
-	result := r.DB.Where("id = ?", jid).Find(&jobData)
+	result := r.DB.Preload("JobLocation").
+		Preload("Technology").
+		Preload("WorkMode").
+		Preload("Qualification").
+		Preload("Shift").
+		Preload("JobType").
+		Where("id = ?", jid).Find(&jobData)
+
 	if result.Error != nil {
 		log.Info().Err(result.Error).Send()
 		return models.Jobs{}, errors.New("could not create the jobs")
@@ -19,13 +26,15 @@ func (r *Repo) ViewJobDetailsBy(ctx context.Context, jid uint64) (models.Jobs, e
 	return jobData, nil
 }
 
-func (r *Repo) CreateJob(ctx context.Context, jobData models.Jobs) (models.Jobs, error) {
+func (r *Repo) CreateJob(ctx context.Context, jobData models.Jobs) (models.ResponseJobId, error) {
 	result := r.DB.Create(&jobData)
 	if result.Error != nil {
 		log.Info().Err(result.Error).Send()
-		return models.Jobs{}, errors.New("could not create the jobs")
+		return models.ResponseJobId{}, errors.New("could not create the jobs")
 	}
-	return jobData, nil
+	return models.ResponseJobId{
+		ID: jobData.ID,
+	}, nil
 }
 
 func (r *Repo) FindAllJobs(ctx context.Context) ([]models.Jobs, error) {

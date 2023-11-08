@@ -23,13 +23,15 @@ type UserService interface {
 	ViewAllCompanies(ctx context.Context) ([]models.Company, error)
 	ViewCompanyById(ctx context.Context, cid uint64) (models.Company, error)
 
-	AddJobDetails(ctx context.Context, jobData models.Jobs, cid uint64) (models.Jobs, error)
+	AddJobDetails(ctx context.Context, jobData models.Hr, cid uint64) (models.ResponseJobId, error)
+	FilterJob(ctx context.Context, jobApplication []models.RespondJobApplicant) ([]models.RespondJobApplicant, error)
 	ViewAllJobs(ctx context.Context) ([]models.Jobs, error)
 	ViewJobById(ctx context.Context, jid uint64) (models.Jobs, error)
 	ViewJobByCid(ctx context.Context, cid uint64) ([]models.Jobs, error)
 }
 
 func NewService(userRepo repository.UserRepo, a auth.Authentication) (UserService, error) {
+
 	if userRepo == nil {
 		return nil, errors.New("interface cannot be null")
 	}

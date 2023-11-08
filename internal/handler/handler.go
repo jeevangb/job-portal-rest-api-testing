@@ -37,6 +37,7 @@ func SetApi(a auth.Authentication, src service.UserService) *gin.Engine {
 	r.GET("/job/view/:id", m.Authenticate(h.ViewJob))
 	r.GET("/viewAllJobs/all", m.Authenticate(h.ViewAllJobs))
 	r.GET("/viewJobById/:id", m.Authenticate(h.ViewJobByID))
+	r.POST("/ProcessJobById", m.Authenticate(h.ProcessJobDetails))
 
 	return r
 

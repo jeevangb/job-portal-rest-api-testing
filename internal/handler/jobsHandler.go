@@ -37,6 +37,7 @@ func (h *Handler) ViewJobByID(c *gin.Context) {
 	jid, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
+		return
 	}
 
 	jobData, err := h.Service.ViewJobById(ctx, jid)
@@ -103,6 +104,7 @@ func (h *Handler) ViewJob(c *gin.Context) {
 	cid, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
+		return
 	}
 
 	jobData, err := h.Service.ViewJobByCid(ctx, cid)
@@ -141,7 +143,7 @@ func (h *Handler) AddJob(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 	}
 
-	var jobData models.Jobs
+	var jobData models.Hr
 
 	err = json.NewDecoder(c.Request.Body).Decode(&jobData)
 	if err != nil {
@@ -152,7 +154,7 @@ func (h *Handler) AddJob(c *gin.Context) {
 		return
 	}
 
-	jobData, err = h.Service.AddJobDetails(ctx, jobData, cid)
+	jobs, err := h.Service.AddJobDetails(ctx, jobData, cid)
 	if err != nil {
 		log.Error().Err(err).Str("trace id", traceid)
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -161,6 +163,46 @@ func (h *Handler) AddJob(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, jobData)
+	c.JSON(http.StatusOK, jobs)
+
+}
+
+func (h *Handler) ProcessJobDetails(c *gin.Context) {
+
+	ctx := c.Request.Context()
+	traceid, ok := ctx.Value(middleware.TraceIDKey).(string)
+	if !ok {
+		log.Error().Msg("traceid missing from context")
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": http.StatusText(http.StatusInternalServerError),
+		})
+		return
+	}
+	_, ok = ctx.Value(auth.Key).(jwt.RegisteredClaims)
+	if !ok {
+		log.Error().Str("Trace Id", traceid).Msg("login first")
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": http.StatusText(http.StatusUnauthorized)})
+		return
+	}
+	var jobApplication []models.RespondJobApplicant
+
+	err := json.NewDecoder(c.Request.Body).Decode(&jobApplication)
+	if err != nil {
+		log.Error().Err(err).Str("trace id", traceid)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": "please provide all fields",
+		})
+		return
+	}
+	appicants, err := h.Service.FilterJob(ctx, jobApplication)
+	if err != nil {
+		log.Error().Err(err).Str("trace id", traceid)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": "unable to filter records",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, appicants)
 
 }
