@@ -55,10 +55,10 @@ func (mr *MockUserServiceMockRecorder) AddCompanyDetails(ctx, companyData any) *
 }
 
 // AddJobDetails mocks base method.
-func (m *MockUserService) AddJobDetails(ctx context.Context, jobData models.Jobs, cid uint64) (models.Jobs, error) {
+func (m *MockUserService) AddJobDetails(ctx context.Context, jobData models.Hr, cid uint64) (models.ResponseJobId, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddJobDetails", ctx, jobData, cid)
-	ret0, _ := ret[0].(models.Jobs)
+	ret0, _ := ret[0].(models.ResponseJobId)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -67,6 +67,21 @@ func (m *MockUserService) AddJobDetails(ctx context.Context, jobData models.Jobs
 func (mr *MockUserServiceMockRecorder) AddJobDetails(ctx, jobData, cid any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddJobDetails", reflect.TypeOf((*MockUserService)(nil).AddJobDetails), ctx, jobData, cid)
+}
+
+// FilterJob mocks base method.
+func (m *MockUserService) FilterJob(ctx context.Context, jobApplication []models.RespondJobApplicant) ([]models.RespondJobApplicant, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FilterJob", ctx, jobApplication)
+	ret0, _ := ret[0].([]models.RespondJobApplicant)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FilterJob indicates an expected call of FilterJob.
+func (mr *MockUserServiceMockRecorder) FilterJob(ctx, jobApplication any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FilterJob", reflect.TypeOf((*MockUserService)(nil).FilterJob), ctx, jobApplication)
 }
 
 // UserLogin mocks base method.

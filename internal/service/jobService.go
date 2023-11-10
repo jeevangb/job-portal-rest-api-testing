@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"strconv"
 	"sync"
 
@@ -111,29 +109,36 @@ func (s *Service) ViewJobByCid(ctx context.Context, cid uint64) ([]models.Jobs, 
 	return jobData, nil
 }
 
-func (s *Service) FilterJob(ctx context.Context, jobApplication []models.RespondJobApplicant) ([]models.RespondJobApplicant, error) {
+var mapCaching = make(map[uint]models.Jobs)
+
+func (s *Service) FilterJob(ctx context.Context, jobApplications []models.RespondJobApplicant) ([]models.RespondJobApplicant, error) {
 
 	var FilterJobData []models.RespondJobApplicant
-	jobdetail, err := s.UserRepo.ViewJobDetailsBy(ctx, uint64(4))
-
-	if err != nil {
-		return nil, errors.New("not able to get  jobs from database")
-	}
 
 	ch := make(chan models.RespondJobApplicant)
 	wg := new(sync.WaitGroup)
 
-	for _, v := range jobApplication {
+	for _, jobApplication := range jobApplications {
 		wg.Add(1)
-		go func(v models.RespondJobApplicant) {
+		go func(jobApplication models.RespondJobApplicant) {
 			defer wg.Done()
-			bool, singleApplication := checkApplicantsCriteria(v, jobdetail)
-			if bool {
-				// FilterJobData = append(FilterJobData, singleApplication)
-				ch <- singleApplication
+			jobdetail, ok := mapCaching[jobApplication.Jid]
+			if !ok {
+				val, err := s.UserRepo.ViewJobDetailsBy(ctx, uint64(jobApplication.Jid))
+				if err != nil {
+					return
+				}
+				mapCaching[jobApplication.Jid] = val
+				jobdetail = val
 			}
 
-		}(v)
+			b := checkApplicantsCriteria(jobApplication, jobdetail)
+			if b {
+
+				ch <- jobApplication
+			}
+
+		}(jobApplication)
 	}
 	go func() {
 		wg.Wait()
@@ -147,40 +152,40 @@ func (s *Service) FilterJob(ctx context.Context, jobApplication []models.Respond
 	return FilterJobData, nil
 }
 
-func checkApplicantsCriteria(v models.RespondJobApplicant, jobdetail models.Jobs) (bool, models.RespondJobApplicant) {
+func checkApplicantsCriteria(v models.RespondJobApplicant, jobdetail models.Jobs) bool {
 	////////////////////////////////filter budget
 	applicantBudget, err := strconv.Atoi(v.Jobs.Budget)
 	if err != nil {
-		panic("error while conversion budget data from applicants")
+		return false
 	}
 	hrBudget, err := strconv.Atoi(jobdetail.Budget)
 	if err != nil {
 		panic("error while conversion budget data from hr posting")
 	}
 	if applicantBudget > hrBudget {
-		return false, models.RespondJobApplicant{}
+
+		return false
+
 	}
 	/////////////////////////////////////////////filter notice period
-	hrMinNoticePeriod, err := strconv.Atoi(jobdetail.MinNoticePeriod)
-	fmt.Println(hrMinNoticePeriod)
-	if err != nil {
-		panic("error while conversion min notice  period data from hr posting")
-	}
+	// hrMinNoticePeriod, err := strconv.Atoi(jobdetail.MinNoticePeriod)
+	// fmt.Println(hrMinNoticePeriod)
+	// if err != nil {
+
+	// 	panic("error while conversion min notice  period data from hr posting")
+	// }
 	hrMaxNoticePeriod, err := strconv.Atoi(jobdetail.MaxNoticePeriod)
-	fmt.Println(hrMaxNoticePeriod)
 	if err != nil {
-		panic("error while conversion max notice period data from hr posting")
+		return false
 	}
 	applicantNoticePeriod, err := strconv.Atoi(v.Jobs.Np)
 	if err != nil {
-		panic("error while conversion notice period from applicant")
+		return false
 	}
 
-	if (applicantNoticePeriod < hrMinNoticePeriod) || (applicantNoticePeriod > hrMaxNoticePeriod) {
-		return false, models.RespondJobApplicant{}
-	}
-	if v.Jobs.JobDescription != jobdetail.Jobdescription {
-		return false, models.RespondJobApplicant{}
+	if (applicantNoticePeriod < 0) || (applicantNoticePeriod > hrMaxNoticePeriod) {
+
+		return false
 	}
 
 	count := 0
@@ -196,7 +201,7 @@ func checkApplicantsCriteria(v models.RespondJobApplicant, jobdetail models.Jobs
 		}
 	}
 	if count == 0 {
-		return false, models.RespondJobApplicant{}
+		return false
 	}
 
 	//////////////////////////////////////////////////////////////////////
@@ -211,7 +216,7 @@ func checkApplicantsCriteria(v models.RespondJobApplicant, jobdetail models.Jobs
 		}
 	}
 	if count == 0 {
-		return false, models.RespondJobApplicant{}
+		return false
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -226,7 +231,7 @@ func checkApplicantsCriteria(v models.RespondJobApplicant, jobdetail models.Jobs
 		}
 	}
 	if count == 0 {
-		return false, models.RespondJobApplicant{}
+		return false
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -241,7 +246,7 @@ func checkApplicantsCriteria(v models.RespondJobApplicant, jobdetail models.Jobs
 		}
 	}
 	if count == 0 {
-		return false, models.RespondJobApplicant{}
+		return false
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -256,7 +261,7 @@ func checkApplicantsCriteria(v models.RespondJobApplicant, jobdetail models.Jobs
 		}
 	}
 	if count == 0 {
-		return false, models.RespondJobApplicant{}
+		return false
 	}
 	////////////////////////////////////////////////////////////////////////
 	count = 0
@@ -270,7 +275,7 @@ func checkApplicantsCriteria(v models.RespondJobApplicant, jobdetail models.Jobs
 		}
 	}
 	if count == 0 {
-		return false, models.RespondJobApplicant{}
+		return false
 	}
-	return true, v
+	return true
 }

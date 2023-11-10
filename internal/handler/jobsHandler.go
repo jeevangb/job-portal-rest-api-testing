@@ -194,6 +194,7 @@ func (h *Handler) ProcessJobDetails(c *gin.Context) {
 		})
 		return
 	}
+
 	appicants, err := h.Service.FilterJob(ctx, jobApplication)
 	if err != nil {
 		log.Error().Err(err).Str("trace id", traceid)

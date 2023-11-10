@@ -21,7 +21,7 @@ func (m *Mid) Authenticate(next gin.HandlerFunc) gin.HandlerFunc {
 			log.Error().Msg("trace id not present in the context")
 
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"error": http.StatusText(http.StatusInternalServerError),
+				"error": http.StatusText(http.StatusUnauthorized),
 			})
 			return
 		}

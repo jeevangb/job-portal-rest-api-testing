@@ -1,317 +1,665 @@
 package service
 
-// import (
-// 	"context"
-// 	"errors"
-// 	"jeevan/jobportal/internal/auth"
-// 	"jeevan/jobportal/internal/models"
-// 	"jeevan/jobportal/internal/repository"
-// 	"reflect"
-// 	"testing"
+import (
+	"context"
+	"errors"
+	"jeevan/jobportal/internal/auth"
+	"jeevan/jobportal/internal/models"
+	"jeevan/jobportal/internal/repository"
+	"reflect"
+	"testing"
 
-// 	"go.uber.org/mock/gomock"
-// )
+	gomock "go.uber.org/mock/gomock"
+	"gorm.io/gorm"
+)
 
-// func TestService_ViewJobById(t *testing.T) {
-// 	type args struct {
-// 		ctx context.Context
-// 		jid uint64
-// 	}
-// 	tests := []struct {
-// 		name         string
-// 		s            *Service
-// 		args         args
-// 		want         models.Jobs
-// 		wantErr      bool
-// 		mockResponse func() (models.Jobs, error)
-// 	}{
-// 		{
-// 			name: "error from db",
-// 			args: args{
-// 				ctx: context.Background(),
-// 				jid: 1,
-// 			},
-// 			want:    models.Jobs{},
-// 			wantErr: true,
-// 			mockResponse: func() (models.Jobs, error) {
-// 				return models.Jobs{}, errors.New("test error")
-// 			},
-// 		},
-// 		{
-// 			name: "success from db",
-// 			args: args{
-// 				ctx: context.Background(),
-// 				jid: 11,
-// 			},
-// 			want: models.Jobs{
-// 				Company: models.Company{
-// 					Name: "Tek System",
-// 				}, Cid: 1,
-// 				Title: "Software",
-// 			},
-// 			wantErr: false,
-// 			mockResponse: func() (models.Jobs, error) {
-// 				return models.Jobs{
-// 					Company: models.Company{
-// 						Name: "Tek System",
-// 					}, Cid: 1, Title: "Software",
-// 				}, nil
-// 			},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mc := gomock.NewController(t)
-// 			mockRepo := repository.NewMockUserRepo(mc)
-// 			if tt.mockResponse != nil {
-// 				mockRepo.EXPECT().ViewJobDetailsBy(tt.args.ctx, tt.args.jid).Return(tt.mockResponse()).AnyTimes()
-// 			}
+func TestService_AddJobDetails(t *testing.T) {
+	type args struct {
+		ctx     context.Context
+		jobData models.Hr
+		cid     uint64
+	}
+	tests := []struct {
+		name         string
+		args         args
+		want         models.ResponseJobId
+		wantErr      bool
+		mockResponse func() (models.ResponseJobId, error)
+	}{
+		// TODO: Add test cases.
+		{
+			name: "error case to get all data ",
+			args: args{
+				ctx: context.Background(),
+			},
+			want:    models.ResponseJobId{},
+			wantErr: true,
+			mockResponse: func() (models.ResponseJobId, error) {
+				return models.ResponseJobId{}, errors.New("test error")
 
-// 			s, _ := NewService(mockRepo, &auth.Auth{})
-// 			got, err := s.ViewJobById(tt.args.ctx, tt.args.jid)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("Service.ViewJobById() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			if !reflect.DeepEqual(got, tt.want) {
-// 				t.Errorf("Service.ViewJobById() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
+			},
+		},
+		{
+			name: "success case",
+			args: args{
+				ctx: context.Background(),
+				jobData: models.Hr{
+					Title:          "merndeceloper",
+					Minnp:          "0",
+					Maxnp:          "9",
+					Budget:         "1000",
+					JobLocation:    []uint{1, 2},
+					Technology:     []uint{1, 2},
+					WorkMode:       []uint{1, 2},
+					JobDescription: "go",
+					Qualification:  []uint{1, 2},
+					Shift:          []uint{1, 2},
+					JobType:        []uint{1, 2},
+				},
+				cid: 1,
+			},
 
-// func TestService_ViewAllJobs(t *testing.T) {
-// 	type args struct {
-// 		ctx context.Context
-// 	}
-// 	tests := []struct {
-// 		name         string
-// 		s            *Service
-// 		args         args
-// 		want         []models.Jobs
-// 		wantErr      bool
-// 		mockResponse func() ([]models.Jobs, error)
-// 	}{
-// 		{
-// 			name: "error case to get all data ",
-// 			args: args{
-// 				ctx: context.Background(),
-// 			},
-// 			want:    nil,
-// 			wantErr: true,
-// 			mockResponse: func() ([]models.Jobs, error) {
-// 				return nil, errors.New("test error")
+			want: models.ResponseJobId{ID: 1},
 
-// 			},
-// 		},
-// 		{
-// 			name: "success case to get all data ",
-// 			args: args{
-// 				ctx: context.Background(),
-// 			},
-// 			want: []models.Jobs{
-// 				{
-// 					Cid:    1,
-// 					Title:  "Tek system",
-// 					Salary: "500000",
-// 				},
-// 				{
-// 					Cid:    2,
-// 					Title:  "Accenture",
-// 					Salary: "6000",
-// 				},
-// 			},
-// 			wantErr: false,
-// 			mockResponse: func() ([]models.Jobs, error) {
-// 				return []models.Jobs{
-// 					{
-// 						Cid:    1,
-// 						Title:  "Tek system",
-// 						Salary: "500000",
-// 					},
-// 					{
-// 						Cid:    2,
-// 						Title:  "Accenture",
-// 						Salary: "6000",
-// 					},
-// 				}, nil
-// 			},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mc := gomock.NewController(t)
-// 			mockRepo := repository.NewMockUserRepo(mc)
-// 			if tt.mockResponse != nil {
-// 				mockRepo.EXPECT().FindAllJobs(tt.args.ctx).Return(tt.mockResponse()).AnyTimes()
-// 			}
+			wantErr: false,
 
-// 			s, _ := NewService(mockRepo, &auth.Auth{})
-// 			got, err := s.ViewAllJobs(tt.args.ctx)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("Service.ViewAllJobs() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			if !reflect.DeepEqual(got, tt.want) {
-// 				t.Errorf("Service.ViewAllJobs() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
+			mockResponse: func() (models.ResponseJobId, error) {
+				return models.ResponseJobId{ID: 1}, nil
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mc := gomock.NewController(t)
+			mockRepo := repository.NewMockUserRepo(mc)
+			if tt.mockResponse != nil {
+				mockRepo.EXPECT().CreateJob(tt.args.ctx, gomock.Any()).Return(tt.mockResponse()).AnyTimes()
+			}
 
-// func TestService_AddJobDetails(t *testing.T) {
-// 	type args struct {
-// 		ctx     context.Context
-// 		jobData models.Jobs
-// 		cid     uint64
-// 	}
-// 	tests := []struct {
-// 		name         string
-// 		s            *Service
-// 		args         args
-// 		want         models.Jobs
-// 		wantErr      bool
-// 		mockResponse func() (models.Jobs, error)
-// 	}{
-// 		{
-// 			name: "error case",
-// 			args: args{
-// 				ctx:     context.Background(),
-// 				jobData: models.Jobs{},
-// 			},
-// 			want:    models.Jobs{},
-// 			wantErr: true,
-// 			mockResponse: func() (models.Jobs, error) {
-// 				return models.Jobs{}, errors.New("test error")
-// 			},
-// 		},
-// 		{
-// 			name: "success case",
-// 			args: args{
-// 				ctx: context.Background(),
-// 				jobData: models.Jobs{
-// 					Title:  "Developer",
-// 					Salary: "45000",
-// 					Cid:    1,
-// 				},
-// 				cid: 1,
-// 			},
-// 			want: models.Jobs{
-// 				Title:  "Developer",
-// 				Salary: "45000",
-// 				Cid:    1,
-// 			},
+			s, _ := NewService(mockRepo, &auth.Auth{})
+			got, err := s.AddJobDetails(tt.args.ctx, tt.args.jobData, tt.args.cid)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Service.AddJobDetails() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Service.AddJobDetails() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
-// 			wantErr: false,
+func TestService_FilterJob(t *testing.T) {
+	type args struct {
+		ctx             context.Context
+		jobApplications []models.RespondJobApplicant
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []models.RespondJobApplicant
+		wantErr bool
+		setup   func(mockRepo repository.MockUserRepo)
+	}{
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////
+		{
+			name: "Success",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  uint(1),
+						Jobs: models.JobApplicant{
+							Jid:            uint(1),
+							Title:          "developer",
+							Salary:         "100",
+							Np:             "7",
+							Budget:         "1000",
+							JobLocation:    []uint{1, 2},
+							Technology:     []uint{1},
+							WorkMode:       []uint{1},
+							JobDescription: "gooo",
+							Qualification:  []uint{1, 2},
+							Shift:          []uint{1, 2},
+							JobType:        []uint{1, 2},
+						},
+					},
+					// {
+					// 	Name: "afthab",
+					// 	Jid:  uint(2),
+					// 	Jobs: models.JobApplicant{
+					// 		Jid:            uint(2),
+					// 		Title:          "developer",
+					// 		Salary:         "100",
+					// 		Np:             "7",
+					// 		Budget:         "1000",
+					// 		JobLocation:    []uint{1, 2},
+					// 		Technology:     []uint{1},
+					// 		WorkMode:       []uint{1},
+					// 		JobDescription: "gooo",
+					// 		Qualification:  []uint{1, 2},
+					// 		Shift:          []uint{1, 2},
+					// 		JobType:        []uint{1, 2},
+					// 	},
+					// },
+					// {
+					// 	Name: "ravan",
+					// 	Jid:  uint(1),
+					// 	Jobs: models.JobApplicant{
+					// 		Jid:            uint(1),
+					// 		Title:          "developer",
+					// 		Salary:         "100",
+					// 		Np:             "7",
+					// 		Budget:         "1000",
+					// 		JobLocation:    []uint{1, 2},
+					// 		Technology:     []uint{1},
+					// 		WorkMode:       []uint{1},
+					// 		JobDescription: "gooo",
+					// 		Qualification:  []uint{1, 2},
+					// 		Shift:          []uint{1, 2},
+					// 		JobType:        []uint{1, 2},
+					// 	},
+					// },
+				},
+			},
 
-// 			mockResponse: func() (models.Jobs, error) {
-// 				return models.Jobs{
-// 					Title:  "Developer",
-// 					Salary: "45000",
-// 					Cid:    1,
-// 				}, nil
-// 			},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mc := gomock.NewController(t)
-// 			mockRepo := repository.NewMockUserRepo(mc)
-// 			if tt.mockResponse != nil {
-// 				mockRepo.EXPECT().CreateJob(tt.args.ctx, tt.args.jobData).Return(tt.mockResponse()).AnyTimes()
-// 			}
+			want: []models.RespondJobApplicant{
+				// {
+				// 	Name: "afthab",
+				// 	Jid:  uint(1),
+				// 	Jobs: models.JobApplicant{
+				// 		Jid:            uint(1),
+				// 		Title:          "developer",
+				// 		Salary:         "100",
+				// 		Np:             "7",
+				// 		Budget:         "1000",
+				// 		JobLocation:    []uint{1, 2},
+				// 		Technology:     []uint{1},
+				// 		WorkMode:       []uint{1},
+				// 		JobDescription: "gooo",
+				// 		Qualification:  []uint{1, 2},
+				// 		Shift:          []uint{1, 2},
+				// 		JobType:        []uint{1, 2},
+				// 	},
+				// },
+				{
+					Name: "jeevan",
+					Jid:  uint(1),
+					Jobs: models.JobApplicant{
+						Jid:            uint(1),
+						Title:          "developer",
+						Salary:         "100",
+						Np:             "7",
+						Budget:         "1000",
+						JobLocation:    []uint{1, 2},
+						Technology:     []uint{1},
+						WorkMode:       []uint{1},
+						JobDescription: "gooo",
+						Qualification:  []uint{1, 2},
+						Shift:          []uint{1, 2},
+						JobType:        []uint{1, 2},
+					},
+				},
+				// {
+				// 	Name: "ravan",
+				// 	Jid:  uint(1),
+				// 	Jobs: models.JobApplicant{
+				// 		Jid:            uint(0),
+				// 		Title:          "developer",
+				// 		Salary:         "100",
+				// 		Np:             "7",
+				// 		Budget:         "1000",
+				// 		JobLocation:    []uint{1, 2},
+				// 		Technology:     []uint{1},
+				// 		WorkMode:       []uint{1},
+				// 		JobDescription: "gooo",
+				// 		Qualification:  []uint{1, 2},
+				// 		Shift:          []uint{1, 2},
+				// 		JobType:        []uint{1, 2},
+				// 	},
+				// },
+			},
+			wantErr: false,
+			setup: func(mockRepo repository.MockUserRepo) {
+				mockRepo.EXPECT().ViewJobDetailsBy(gomock.Any(), uint64(1)).Return(models.Jobs{
+					Model: gorm.Model{
+						ID: 1,
+					},
+					Company: models.Company{
+						Model: gorm.Model{
+							ID: 1,
+						},
+					},
+					Cid:   1,
+					Title: "developer",
+					// MinNoticePeriod: "0",
+					MaxNoticePeriod: "40",
+					Budget:          "2000",
+					JobLocation: []models.JobLocation{
+						{
+							Model: gorm.Model{
+								ID: uint(1),
+							},
+						},
+						{
+							Model: gorm.Model{
+								ID: uint(2),
+							},
+						},
+					},
+					Technology: []models.Technology{
+						{
+							Model: gorm.Model{ID: uint(1)},
+						},
+						{
+							Model: gorm.Model{ID: uint(2)},
+						},
+					},
+					WorkMode: []models.WorkMode{
+						{
+							Model: gorm.Model{ID: uint(1)},
+						},
+						{
+							Model: gorm.Model{ID: uint(2)},
+						},
+					},
+					Qualification: []models.Qualification{
+						{
+							Model: gorm.Model{
+								ID: uint(1),
+							},
+						},
+						{
+							Model: gorm.Model{
+								ID: uint(2),
+							},
+						},
+					},
+					Shift: []models.Shift{
+						{Model: gorm.Model{ID: uint(1)}},
+						{Model: gorm.Model{ID: uint(2)}},
+					},
+					JobType: []models.JobType{
+						{Model: gorm.Model{ID: uint(1)}},
+						{Model: gorm.Model{ID: uint(2)}},
+					},
+				}, nil).Times(1)
 
-// 			s, _ := NewService(mockRepo, &auth.Auth{})
-// 			got, err := s.AddJobDetails(tt.args.ctx, tt.args.jobData, tt.args.cid)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("Service.AddJobDetails() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			if !reflect.DeepEqual(got, tt.want) {
-// 				t.Errorf("Service.AddJobDetails() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
+				// mockRepo.EXPECT().ViewJobDetailsBy(gomock.Any(), uint64(2)).Return(models.Jobs{
+				// 	Model: gorm.Model{
+				// 		ID: 2,
+				// 	},
+				// 	Company: models.Company{
+				// 		Model: gorm.Model{
+				// 			ID: 1,
+				// 		},
+				// 	},
+				// 	Cid:   1,
+				// 	Title: "developer",
+				// 	// MinNoticePeriod: "0",
+				// 	MaxNoticePeriod: "40",
+				// 	Budget:          "2000",
+				// 	JobLocation: []models.JobLocation{
+				// 		{
+				// 			Model: gorm.Model{
+				// 				ID: uint(1),
+				// 			},
+				// 		},
+				// 		{
+				// 			Model: gorm.Model{
+				// 				ID: uint(2),
+				// 			},
+				// 		},
+				// 	},
+				// 	Technology: []models.Technology{
+				// 		{
+				// 			Model: gorm.Model{ID: uint(1)},
+				// 		},
+				// 		{
+				// 			Model: gorm.Model{ID: uint(2)},
+				// 		},
+				// 	},
+				// 	WorkMode: []models.WorkMode{
+				// 		{
+				// 			Model: gorm.Model{ID: uint(1)},
+				// 		},
+				// 		{
+				// 			Model: gorm.Model{ID: uint(2)},
+				// 		},
+				// 	},
+				// 	Qualification: []models.Qualification{
+				// 		{
+				// 			Model: gorm.Model{
+				// 				ID: uint(1),
+				// 			},
+				// 		},
+				// 		{
+				// 			Model: gorm.Model{
+				// 				ID: uint(2),
+				// 			},
+				// 		},
+				// 	},
+				// 	Shift: []models.Shift{
+				// 		{Model: gorm.Model{ID: uint(1)}},
+				// 		{Model: gorm.Model{ID: uint(2)}},
+				// 	},
+				// 	JobType: []models.JobType{
+				// 		{Model: gorm.Model{ID: uint(1)}},
+				// 		{Model: gorm.Model{ID: uint(2)}},
+				// 	},
+				// }, nil).Times(1)
+			},
+		},
+		{
+			name: "failure case budget conversion",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  uint(1),
+						Jobs: models.JobApplicant{
+							Jid:            uint(1),
+							Title:          "developer",
+							Salary:         "100",
+							Np:             "7",
+							Budget:         "Ten thousand",
+							JobLocation:    []uint{1, 2},
+							Technology:     []uint{1},
+							WorkMode:       []uint{1},
+							JobDescription: "gooo",
+							Qualification:  []uint{1, 2},
+							Shift:          []uint{1, 2},
+							JobType:        []uint{1, 2},
+						},
+					},
+				},
+			},
 
-// func TestService_ViewJobByCid(t *testing.T) {
-// 	type args struct {
-// 		ctx context.Context
-// 		cid uint64
-// 	}
-// 	tests := []struct {
-// 		name         string
-// 		s            *Service
-// 		args         args
-// 		want         []models.Jobs
-// 		wantErr      bool
-// 		mockResponse func() ([]models.Jobs, error)
-// 	}{
-// 		{
-// 			name: "failure to get details",
-// 			args: args{
-// 				ctx: context.Background(),
-// 				cid: uint64(1),
-// 			},
-// 			want:    nil,
-// 			wantErr: true,
-// 			mockResponse: func() ([]models.Jobs, error) {
-// 				return nil, errors.New("test error")
-// 			},
-// 		},
-// 		{
-// 			name: "success case to get details",
-// 			args: args{
-// 				ctx: context.Background(),
-// 				cid: uint64(1),
-// 			},
-// 			want: []models.Jobs{
-// 				{
-// 					Cid:    1,
-// 					Title:  "Developer",
-// 					Salary: "500000",
-// 				},
-// 				{
-// 					Cid:    2,
-// 					Title:  "Tester",
-// 					Salary: "600000",
-// 				},
-// 			},
-// 			wantErr: false,
-// 			mockResponse: func() ([]models.Jobs, error) {
-// 				return []models.Jobs{
-// 					{
-// 						Cid:    1,
-// 						Title:  "Developer",
-// 						Salary: "500000",
-// 					},
-// 					{
-// 						Cid:    2,
-// 						Title:  "Tester",
-// 						Salary: "600000",
-// 					},
-// 				}, nil
-// 			},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mc := gomock.NewController(t)
-// 			mockRepo := repository.NewMockUserRepo(mc)
-// 			if tt.mockResponse != nil {
-// 				mockRepo.EXPECT().FindJob(gomock.Any(), tt.args.cid).Return(tt.mockResponse()).AnyTimes()
-// 			}
+			want:    nil,
+			wantErr: false,
+			setup: func(mockRepo repository.MockUserRepo) {
+				mockRepo.EXPECT().ViewJobDetailsBy(gomock.Any(), uint64(1)).Return(models.Jobs{
+					Model: gorm.Model{
+						ID: 1,
+					},
+					Company: models.Company{
+						Model: gorm.Model{
+							ID: 1,
+						},
+					},
+					Cid:   1,
+					Title: "developer",
+					// MinNoticePeriod: "0",
+					MaxNoticePeriod: "40",
+					Budget:          "2000",
+					JobLocation: []models.JobLocation{
+						{
+							Model: gorm.Model{
+								ID: uint(1),
+							},
+						},
+						{
+							Model: gorm.Model{
+								ID: uint(2),
+							},
+						},
+					},
+					Technology: []models.Technology{
+						{
+							Model: gorm.Model{ID: uint(1)},
+						},
+						{
+							Model: gorm.Model{ID: uint(2)},
+						},
+					},
+					WorkMode: []models.WorkMode{
+						{
+							Model: gorm.Model{ID: uint(1)},
+						},
+						{
+							Model: gorm.Model{ID: uint(2)},
+						},
+					},
+					Qualification: []models.Qualification{
+						{
+							Model: gorm.Model{
+								ID: uint(1),
+							},
+						},
+						{
+							Model: gorm.Model{
+								ID: uint(2),
+							},
+						},
+					},
+					Shift: []models.Shift{
+						{Model: gorm.Model{ID: uint(1)}},
+						{Model: gorm.Model{ID: uint(2)}},
+					},
+					JobType: []models.JobType{
+						{Model: gorm.Model{ID: uint(1)}},
+						{Model: gorm.Model{ID: uint(2)}},
+					},
+				}, nil).Times(0)
 
-// 			s, _ := NewService(mockRepo, &auth.Auth{})
+			},
+		},
+		{
+			name: "failure budget comparison",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  uint(1),
+						Jobs: models.JobApplicant{
+							Jid:            uint(1),
+							Title:          "developer",
+							Salary:         "100",
+							Np:             "7",
+							Budget:         "10000",
+							JobLocation:    []uint{1, 2},
+							Technology:     []uint{1},
+							WorkMode:       []uint{1},
+							JobDescription: "gooo",
+							Qualification:  []uint{1, 2},
+							Shift:          []uint{1, 2},
+							JobType:        []uint{1, 2},
+						},
+					},
+				},
+			},
 
-// 			got, err := s.ViewJobByCid(tt.args.ctx, tt.args.cid)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("Service.ViewJobByCid() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			if !reflect.DeepEqual(got, tt.want) {
-// 				t.Errorf("Service.ViewJobByCid() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
+			want:    nil,
+			wantErr: false,
+			setup: func(mockRepo repository.MockUserRepo) {
+				mockRepo.EXPECT().ViewJobDetailsBy(gomock.Any(), uint64(1)).Return(models.Jobs{
+					Model: gorm.Model{
+						ID: 1,
+					},
+					Company: models.Company{
+						Model: gorm.Model{
+							ID: 1,
+						},
+					},
+					Cid:   1,
+					Title: "developer",
+					// MinNoticePeriod: "0",
+					MaxNoticePeriod: "40",
+					Budget:          "2000",
+					JobLocation: []models.JobLocation{
+						{
+							Model: gorm.Model{
+								ID: uint(1),
+							},
+						},
+						{
+							Model: gorm.Model{
+								ID: uint(2),
+							},
+						},
+					},
+					Technology: []models.Technology{
+						{
+							Model: gorm.Model{ID: uint(1)},
+						},
+						{
+							Model: gorm.Model{ID: uint(2)},
+						},
+					},
+					WorkMode: []models.WorkMode{
+						{
+							Model: gorm.Model{ID: uint(1)},
+						},
+						{
+							Model: gorm.Model{ID: uint(2)},
+						},
+					},
+					Qualification: []models.Qualification{
+						{
+							Model: gorm.Model{
+								ID: uint(1),
+							},
+						},
+						{
+							Model: gorm.Model{
+								ID: uint(2),
+							},
+						},
+					},
+					Shift: []models.Shift{
+						{Model: gorm.Model{ID: uint(1)}},
+						{Model: gorm.Model{ID: uint(2)}},
+					},
+					JobType: []models.JobType{
+						{Model: gorm.Model{ID: uint(1)}},
+						{Model: gorm.Model{ID: uint(2)}},
+					},
+				}, nil).Times(0)
+
+			},
+		},
+		{
+			name: "failure notice period comparison",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  uint(1),
+						Jobs: models.JobApplicant{
+							Jid:            uint(1),
+							Title:          "developer",
+							Salary:         "100",
+							Np:             "20",
+							Budget:         "10000",
+							JobLocation:    []uint{1, 2},
+							Technology:     []uint{1},
+							WorkMode:       []uint{1},
+							JobDescription: "gooo",
+							Qualification:  []uint{1, 2},
+							Shift:          []uint{1, 2},
+							JobType:        []uint{1, 2},
+						},
+					},
+				},
+			},
+
+			want:    nil,
+			wantErr: false,
+			setup: func(mockRepo repository.MockUserRepo) {
+				mockRepo.EXPECT().ViewJobDetailsBy(gomock.Any(), uint64(1)).Return(models.Jobs{
+					Model: gorm.Model{
+						ID: 1,
+					},
+					Company: models.Company{
+						Model: gorm.Model{
+							ID: 1,
+						},
+					},
+					Cid:   1,
+					Title: "developer",
+					// MinNoticePeriod: "0",
+					MaxNoticePeriod: "40",
+					Budget:          "two thousand",
+					JobLocation: []models.JobLocation{
+						{
+							Model: gorm.Model{
+								ID: uint(1),
+							},
+						},
+						{
+							Model: gorm.Model{
+								ID: uint(2),
+							},
+						},
+					},
+					Technology: []models.Technology{
+						{
+							Model: gorm.Model{ID: uint(1)},
+						},
+						{
+							Model: gorm.Model{ID: uint(2)},
+						},
+					},
+					WorkMode: []models.WorkMode{
+						{
+							Model: gorm.Model{ID: uint(1)},
+						},
+						{
+							Model: gorm.Model{ID: uint(2)},
+						},
+					},
+					Qualification: []models.Qualification{
+						{
+							Model: gorm.Model{
+								ID: uint(1),
+							},
+						},
+						{
+							Model: gorm.Model{
+								ID: uint(2),
+							},
+						},
+					},
+					Shift: []models.Shift{
+						{Model: gorm.Model{ID: uint(1)}},
+						{Model: gorm.Model{ID: uint(2)}},
+					},
+					JobType: []models.JobType{
+						{Model: gorm.Model{ID: uint(1)}},
+						{Model: gorm.Model{ID: uint(2)}},
+					},
+				}, nil).Times(0)
+
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mc := gomock.NewController(t)
+			mockRepo := repository.NewMockUserRepo(mc)
+			tt.setup(*mockRepo)
+
+			s := &Service{
+				UserRepo: mockRepo,
+			}
+			// if tt.mockResponse != nil {
+			// 	mockRepo.EXPECT().ViewJobDetailsBy(tt.args.ctx, uint(1)).Return(tt.mockResponse()).AnyTimes()
+			// }
+
+			// s, _ := NewService(mockRepo, &auth.Auth{})
+			got, err := s.FilterJob(tt.args.ctx, tt.args.jobApplications)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Service.AddJobDetails() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Service.AddJobDetails() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -54,16 +54,16 @@ type Jobs struct {
 
 type Hr struct {
 	Title          string `json:"title"`
-	Minnp          string `json:"minnp"`
-	Maxnp          string `json:"maxnp"`
+	Minnp          string `json:"minNoticePeriod"`
+	Maxnp          string `json:"maxNoticePeriod"`
 	Budget         string `json:"budget"`
-	JobLocation    []uint `json:"job_location"`
-	Technology     []uint `json:"technology"`
-	WorkMode       []uint `json:"workmode"`
-	JobDescription string `json:"job_description"`
-	Qualification  []uint `json:"qualification"`
-	Shift          []uint `json:"shift"`
-	JobType        []uint `json:"job_type"`
+	JobLocation    []uint `json:"locations"`
+	Technology     []uint `json:"technologies"`
+	WorkMode       []uint `json:"workmodes"`
+	JobDescription string `json:"description"`
+	Qualification  []uint `json:"qualifications"`
+	Shift          []uint `json:"shifts"`
+	JobType        []uint `json:"jobTypes"`
 }
 type RespondJobApplicant struct {
 	Name string       `json:"name"`
@@ -74,13 +74,13 @@ type JobApplicant struct {
 	Jid            uint   `json:"cid"`
 	Title          string `json:"title"`
 	Salary         string `json:"salary"`
-	Np             string `json:"np"`
+	Np             string `json:"noticePeriod"`
 	Budget         string `json:"budget"`
-	JobLocation    []uint `json:"job_location"`
-	Technology     []uint `json:"technology"`
-	WorkMode       []uint `json:"workmode"`
-	JobDescription string `json:"job_description"`
-	Qualification  []uint `json:"qualification"`
-	Shift          []uint `json:"shift"`
-	JobType        []uint `json:"job_type"`
+	JobLocation    []uint `json:"jobLocations"`
+	Technology     []uint `json:"technologies"`
+	WorkMode       []uint `json:"workmodes"`
+	JobDescription string `json:"description"`
+	Qualification  []uint `json:"qualifications"`
+	Shift          []uint `json:"shifts"`
+	JobType        []uint `json:"jobTypes"`
 }
