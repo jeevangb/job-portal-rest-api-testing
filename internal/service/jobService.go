@@ -2,10 +2,14 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"jeevan/jobportal/internal/models"
+	"log"
 	"strconv"
 	"sync"
 
-	"jeevan/jobportal/internal/models"
+	"github.com/go-redis/redis/v8"
 
 	"gorm.io/gorm"
 )
@@ -109,11 +113,51 @@ func (s *Service) ViewJobByCid(ctx context.Context, cid uint64) ([]models.Jobs, 
 	return jobData, nil
 }
 
-var mapCaching = make(map[uint]models.Jobs)
+// var mapCaching = make(map[uint]models.Jobs)
 
+// func (s *Service) FilterJob(ctx context.Context, jobApplications []models.RespondJobApplicant) ([]models.RespondJobApplicant, error) {
+
+// 	var FilterJobData []models.RespondJobApplicant
+
+// 	ch := make(chan models.RespondJobApplicant)
+// 	wg := new(sync.WaitGroup)
+
+// 	for _, jobApplication := range jobApplications {
+// 		wg.Add(1)
+// 		go func(jobApplication models.RespondJobApplicant) {
+// 			defer wg.Done()
+// 			jobdetail, ok := mapCaching[jobApplication.Jid]
+// 			if !ok {
+// 				val, err := s.UserRepo.ViewJobDetailsBy(ctx, uint64(jobApplication.Jid))
+// 				if err != nil {
+// 					return
+// 				}
+// 				mapCaching[jobApplication.Jid] = val
+// 				jobdetail = val
+// 			}
+
+// 			b := checkApplicantsCriteria(jobApplication, jobdetail)
+// 			if b {
+
+// 				ch <- jobApplication
+// 			}
+
+// 		}(jobApplication)
+// 	}
+// 	go func() {
+// 		wg.Wait()
+// 		close(ch)
+// 	}()
+
+// 	for data := range ch {
+// 		FilterJobData = append(FilterJobData, data)
+// 	}
+
+//		return FilterJobData, nil
+//	}
 func (s *Service) FilterJob(ctx context.Context, jobApplications []models.RespondJobApplicant) ([]models.RespondJobApplicant, error) {
-
 	var FilterJobData []models.RespondJobApplicant
+	fmt.Println(jobApplications)
 
 	ch := make(chan models.RespondJobApplicant)
 	wg := new(sync.WaitGroup)
@@ -122,24 +166,65 @@ func (s *Service) FilterJob(ctx context.Context, jobApplications []models.Respon
 		wg.Add(1)
 		go func(jobApplication models.RespondJobApplicant) {
 			defer wg.Done()
-			jobdetail, ok := mapCaching[jobApplication.Jid]
-			if !ok {
+
+			// Create a new Redis client for each goroutine
+			redisClient := redis.NewClient(&redis.Options{
+				Addr:     "localhost:6379", // Redis server address
+				Password: "",               // No password by default
+				DB:       0,                // Default DB
+			})
+
+			// Check if the Redis client is connected successfully
+			_, err := redisClient.Ping(ctx).Result()
+			if err != nil {
+				log.Fatalf("Error connecting to Redis: %v", err)
+				return
+			}
+
+			// Use Redis to retrieve job details
+			jobDetailKey := fmt.Sprintf("job:%d", jobApplication.Jid)
+
+			jobDetailStr, err := redisClient.Get(ctx, jobDetailKey).Result()
+
+			if err != nil {
+
+				// If the key is not in Redis, fetch it from the database
 				val, err := s.UserRepo.ViewJobDetailsBy(ctx, uint64(jobApplication.Jid))
+				fmt.Println("//////////////////////////////////////////////////", val)
 				if err != nil {
 					return
 				}
-				mapCaching[jobApplication.Jid] = val
-				jobdetail = val
+				// Serialize the job details to JSON before storing in Redis
+				valJSON, err := json.Marshal(val)
+				if err != nil {
+					return
+				}
+
+				// Store the job details in Redis
+				err = redisClient.Set(ctx, jobDetailKey, valJSON, 0).Err()
+				fmt.Println(err)
+				if err != nil {
+					return
+				}
+				jobDetailStr = string(valJSON)
+
 			}
 
-			b := checkApplicantsCriteria(jobApplication, jobdetail)
-			if b {
+			// Deserialize job details
+			var jobDetail models.Jobs
+			err = json.Unmarshal([]byte(jobDetailStr), &jobDetail)
+			if err != nil {
+				return
+			}
 
+			b := checkApplicantsCriteria(jobApplication, jobDetail)
+			if b {
 				ch <- jobApplication
 			}
 
 		}(jobApplication)
 	}
+
 	go func() {
 		wg.Wait()
 		close(ch)

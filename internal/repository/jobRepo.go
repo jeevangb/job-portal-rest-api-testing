@@ -21,7 +21,7 @@ func (r *Repo) ViewJobDetailsBy(ctx context.Context, jid uint64) (models.Jobs, e
 
 	if result.Error != nil {
 		log.Info().Err(result.Error).Send()
-		return models.Jobs{}, errors.New("could not create the jobs")
+		return models.Jobs{}, errors.New("could not found the jobs")
 	}
 	return jobData, nil
 }
