@@ -190,7 +190,7 @@ func (s *Service) FilterJob(ctx context.Context, jobApplications []models.Respon
 
 				// If the key is not in Redis, fetch it from the database
 				val, err := s.UserRepo.ViewJobDetailsBy(ctx, uint64(jobApplication.Jid))
-				fmt.Println("//////////////////////////////////////////////////", val)
+				fmt.Println("////////////////////////////////////////////", val)
 				if err != nil {
 					return
 				}
