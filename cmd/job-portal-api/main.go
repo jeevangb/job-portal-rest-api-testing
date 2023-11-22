@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"jeevan/jobportal/internal/auth"
+	"jeevan/jobportal/internal/cache"
 	"jeevan/jobportal/internal/database"
 	"jeevan/jobportal/internal/handler"
 	"jeevan/jobportal/internal/repository"
@@ -76,6 +77,11 @@ func StartApp() error {
 	if err != nil {
 		return fmt.Errorf("database is not connected: %w", err)
 	}
+	////////////////////////////////////////////
+	///redis connection
+	rdb := database.ResdisConnection()
+	// service.NewService(rdb)
+	rdbinter := cache.NewRdbLayer(rdb)
 
 	//****************************************************************************
 	// initialize the repository layer
@@ -84,7 +90,7 @@ func StartApp() error {
 		return err
 	}
 
-	svc, err := service.NewService(repo, a)
+	svc, err := service.NewService(repo, a, rdbinter)
 	if err != nil {
 		return err
 	}

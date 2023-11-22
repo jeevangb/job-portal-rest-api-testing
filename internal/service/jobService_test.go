@@ -4,90 +4,15 @@ import (
 	"context"
 	"errors"
 	"jeevan/jobportal/internal/auth"
+	"jeevan/jobportal/internal/cache"
 	"jeevan/jobportal/internal/models"
 	"jeevan/jobportal/internal/repository"
 	"reflect"
 	"testing"
 
-	gomock "go.uber.org/mock/gomock"
-	"gorm.io/gorm"
+	"github.com/go-redis/redis/v8"
+	"go.uber.org/mock/gomock"
 )
-
-func TestService_AddJobDetails(t *testing.T) {
-	type args struct {
-		ctx     context.Context
-		jobData models.Hr
-		cid     uint64
-	}
-	tests := []struct {
-		name         string
-		args         args
-		want         models.ResponseJobId
-		wantErr      bool
-		mockResponse func() (models.ResponseJobId, error)
-	}{
-		// TODO: Add test cases.
-		{
-			name: "error case to get all data ",
-			args: args{
-				ctx: context.Background(),
-			},
-			want:    models.ResponseJobId{},
-			wantErr: true,
-			mockResponse: func() (models.ResponseJobId, error) {
-				return models.ResponseJobId{}, errors.New("test error")
-
-			},
-		},
-		{
-			name: "success case",
-			args: args{
-				ctx: context.Background(),
-				jobData: models.Hr{
-					Title:          "merndeceloper",
-					Minnp:          "0",
-					Maxnp:          "9",
-					Budget:         "1000",
-					JobLocation:    []uint{1, 2},
-					Technology:     []uint{1, 2},
-					WorkMode:       []uint{1, 2},
-					JobDescription: "go",
-					Qualification:  []uint{1, 2},
-					Shift:          []uint{1, 2},
-					JobType:        []uint{1, 2},
-				},
-				cid: 1,
-			},
-
-			want: models.ResponseJobId{ID: 1},
-
-			wantErr: false,
-
-			mockResponse: func() (models.ResponseJobId, error) {
-				return models.ResponseJobId{ID: 1}, nil
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mc := gomock.NewController(t)
-			mockRepo := repository.NewMockUserRepo(mc)
-			if tt.mockResponse != nil {
-				mockRepo.EXPECT().CreateJob(tt.args.ctx, gomock.Any()).Return(tt.mockResponse()).AnyTimes()
-			}
-
-			s, _ := NewService(mockRepo, &auth.Auth{})
-			got, err := s.AddJobDetails(tt.args.ctx, tt.args.jobData, tt.args.cid)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Service.AddJobDetails() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Service.AddJobDetails() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestService_FilterJob(t *testing.T) {
 	type args struct {
@@ -95,570 +20,575 @@ func TestService_FilterJob(t *testing.T) {
 		jobApplications []models.RespondJobApplicant
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    []models.RespondJobApplicant
-		wantErr bool
-		setup   func(mockRepo repository.MockUserRepo)
+		name                 string
+		args                 args
+		want                 []models.RespondJobApplicant
+		wantErr              bool
+		mockCacheResponse    func() (string, error)
+		mockAddCacheResponse func() error
+		mockRepoResponse     func() (models.Jobs, error)
 	}{
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////
 		{
-			name: "Success",
+			// TODO: Add test cases.
+			name: "fail to marshal the data from the redis",
 			args: args{
 				ctx: context.Background(),
 				jobApplications: []models.RespondJobApplicant{
 					{
 						Name: "jeevan",
-						Jid:  uint(1),
+						Jid:  1,
 						Jobs: models.JobApplicant{
-							Jid:            uint(1),
-							Title:          "developer",
-							Salary:         "100",
-							Np:             "7",
-							Budget:         "1000",
-							JobLocation:    []uint{1, 2},
-							Technology:     []uint{1},
-							WorkMode:       []uint{1},
-							JobDescription: "gooo",
-							Qualification:  []uint{1, 2},
-							Shift:          []uint{1, 2},
-							JobType:        []uint{1, 2},
+							Jid:           1,
+							Title:         "go",
+							Np:            "20",
+							Budget:        "10000",
+							Salary:        "10000",
+							JobLocation:   []uint{1},
+							Technology:    []uint{1},
+							WorkMode:      []uint{1},
+							Qualification: []uint{1},
+							Shift:         []uint{1},
+							JobType:       []uint{1},
 						},
 					},
-					// {
-					// 	Name: "afthab",
-					// 	Jid:  uint(2),
-					// 	Jobs: models.JobApplicant{
-					// 		Jid:            uint(2),
-					// 		Title:          "developer",
-					// 		Salary:         "100",
-					// 		Np:             "7",
-					// 		Budget:         "1000",
-					// 		JobLocation:    []uint{1, 2},
-					// 		Technology:     []uint{1},
-					// 		WorkMode:       []uint{1},
-					// 		JobDescription: "gooo",
-					// 		Qualification:  []uint{1, 2},
-					// 		Shift:          []uint{1, 2},
-					// 		JobType:        []uint{1, 2},
-					// 	},
-					// },
-					// {
-					// 	Name: "ravan",
-					// 	Jid:  uint(1),
-					// 	Jobs: models.JobApplicant{
-					// 		Jid:            uint(1),
-					// 		Title:          "developer",
-					// 		Salary:         "100",
-					// 		Np:             "7",
-					// 		Budget:         "1000",
-					// 		JobLocation:    []uint{1, 2},
-					// 		Technology:     []uint{1},
-					// 		WorkMode:       []uint{1},
-					// 		JobDescription: "gooo",
-					// 		Qualification:  []uint{1, 2},
-					// 		Shift:          []uint{1, 2},
-					// 		JobType:        []uint{1, 2},
-					// 	},
-					// },
 				},
 			},
+			want:    nil,
+			wantErr: false,
+			mockAddCacheResponse: func() error {
+				return nil
+			},
+			mockCacheResponse: func() (string, error) {
+				return `Model: gorm.Model{
+					ID: 1,
+				},
+				Company: models.Company{
+					Model: gorm.Model{
+						ID: uint(1),
+					},
+					Name: "jeevan",
+				},
+				Cid:   1,
+				Title: "go",
+				MaxNoticePeriod: "20",
+				Budget:          "1000",
+				JobLocation: []models.JobLocation{
+					{
+						Model: gorm.Model{ID: uint(1)},
+					},
+					{
+						Model: gorm.Model{ID: uint(2)},
+					},
+				},
+				Technology: []models.Technology{
+					{
+						Model: gorm.Model{ID: uint(1)},
+					},
+					{
+						Model: gorm.Model{ID: uint(2)},
+					},
+				},
+				WorkMode: []models.WorkMode{
+					{Model: gorm.Model{ID: uint(1)}},
+				},
+				Shift: []models.Shift{
+					{Model: gorm.Model{ID: uint(1)}},
 
+				},
+				Qualification: []models.Qualification{
+					{Model: gorm.Model{ID: uint(1)}},
+				},
+				JobType: []models.JobType{
+					{Model: gorm.Model{ID: uint(1)}},
+				},
+				MinNoticePeriod: "20",
+				Jobdescription:  "go",`, nil
+			},
+			mockRepoResponse: func() (models.Jobs, error) {
+				return models.Jobs{}, errors.New("test error")
+			},
+		},
+		{
+			// TODO: Add test cases.
+			name: "error while converting the budget",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  1,
+						Jobs: models.JobApplicant{
+							Jid:           1,
+							Title:         "go",
+							Np:            "20",
+							Budget:        "jeevan",
+							Salary:        "10000",
+							JobLocation:   []uint{1},
+							Technology:    []uint{1},
+							WorkMode:      []uint{1},
+							Qualification: []uint{1},
+							Shift:         []uint{1},
+							JobType:       []uint{1},
+						},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: false,
+			mockAddCacheResponse: func() error {
+				return nil
+			},
+			mockCacheResponse: func() (string, error) {
+				return `{"ID":6,"CreatedAt":"2023-11-08T13:02:36.768974+05:30","UpdatedAt":"2023-11-08T13:02:36.768974+05:30","DeletedAt":null,"cid":1,"title":"Java Developer","minnp":"0","maxnp":"60","budget":"7000000","JobLocation":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Banglore"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Hyderbad"}],"Technology":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"java"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"Python"}],"WorkMode":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Online"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Offline"}],"job_description":"backend developer","Qualification":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BE"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BCA"}],"Shift":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Night"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Day"}],"JobType":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"FullTime"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"PartTime"}]}`, nil
+			},
+			mockRepoResponse: func() (models.Jobs, error) {
+				return models.Jobs{}, errors.New("test error")
+			},
+		},
+		{
+			// TODO: Add test cases.
+			name: "error while converting the notice period",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  1,
+						Jobs: models.JobApplicant{
+							Jid:           1,
+							Title:         "go",
+							Np:            "jeevan",
+							Budget:        "100",
+							Salary:        "10000",
+							JobLocation:   []uint{1},
+							Technology:    []uint{1},
+							WorkMode:      []uint{1},
+							Qualification: []uint{1},
+							Shift:         []uint{1},
+							JobType:       []uint{1},
+						},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: false,
+			mockAddCacheResponse: func() error {
+				return nil
+			},
+			mockCacheResponse: func() (string, error) {
+				return `{"ID":6,"CreatedAt":"2023-11-08T13:02:36.768974+05:30","UpdatedAt":"2023-11-08T13:02:36.768974+05:30","DeletedAt":null,"cid":1,"title":"Java Developer","minnp":"0","maxnp":"60","budget":"7000000","JobLocation":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Banglore"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Hyderbad"}],"Technology":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"java"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"Python"}],"WorkMode":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Online"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Offline"}],"job_description":"backend developer","Qualification":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BE"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BCA"}],"Shift":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Night"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Day"}],"JobType":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"FullTime"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"PartTime"}]}`, nil
+			},
+			mockRepoResponse: func() (models.Jobs, error) {
+				return models.Jobs{}, errors.New("test error")
+			},
+		},
+		{
+			// TODO: Add test cases.
+			name: "error while compare notice period",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  1,
+						Jobs: models.JobApplicant{
+							Jid:           1,
+							Title:         "go",
+							Np:            "2000",
+							Budget:        "100",
+							Salary:        "10000",
+							JobLocation:   []uint{1},
+							Technology:    []uint{1},
+							WorkMode:      []uint{1},
+							Qualification: []uint{1},
+							Shift:         []uint{1},
+							JobType:       []uint{1},
+						},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: false,
+			mockAddCacheResponse: func() error {
+				return nil
+			},
+			mockCacheResponse: func() (string, error) {
+				return `{"ID":6,"CreatedAt":"2023-11-08T13:02:36.768974+05:30","UpdatedAt":"2023-11-08T13:02:36.768974+05:30","DeletedAt":null,"cid":1,"title":"Java Developer","minnp":"0","maxnp":"60","budget":"7000000","JobLocation":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Banglore"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Hyderbad"}],"Technology":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"java"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"Python"}],"WorkMode":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Online"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Offline"}],"job_description":"backend developer","Qualification":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BE"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BCA"}],"Shift":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Night"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Day"}],"JobType":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"FullTime"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"PartTime"}]}`, nil
+			},
+			mockRepoResponse: func() (models.Jobs, error) {
+				return models.Jobs{}, errors.New("test error")
+			},
+		},
+		{
+			// TODO: Add test cases.
+			name: "error while compare job location",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  1,
+						Jobs: models.JobApplicant{
+							Jid:           1,
+							Title:         "go",
+							Np:            "2",
+							Budget:        "100",
+							Salary:        "10000",
+							JobLocation:   []uint{100},
+							Technology:    []uint{1},
+							WorkMode:      []uint{1},
+							Qualification: []uint{1},
+							Shift:         []uint{1},
+							JobType:       []uint{1},
+						},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: false,
+			mockAddCacheResponse: func() error {
+				return nil
+			},
+			mockCacheResponse: func() (string, error) {
+				return `{"ID":6,"CreatedAt":"2023-11-08T13:02:36.768974+05:30","UpdatedAt":"2023-11-08T13:02:36.768974+05:30","DeletedAt":null,"cid":1,"title":"Java Developer","minnp":"0","maxnp":"60","budget":"7000000","JobLocation":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Banglore"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Hyderbad"}],"Technology":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"java"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"Python"}],"WorkMode":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Online"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Offline"}],"job_description":"backend developer","Qualification":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BE"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BCA"}],"Shift":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Night"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Day"}],"JobType":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"FullTime"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"PartTime"}]}`, nil
+			},
+			mockRepoResponse: func() (models.Jobs, error) {
+				return models.Jobs{}, errors.New("test error")
+			},
+		},
+		{
+			// TODO: Add test cases.
+			name: "error while compare job type",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  1,
+						Jobs: models.JobApplicant{
+							Jid:           1,
+							Title:         "go",
+							Np:            "2",
+							Budget:        "100",
+							Salary:        "10000",
+							JobLocation:   []uint{1},
+							Technology:    []uint{1},
+							WorkMode:      []uint{1},
+							Qualification: []uint{1},
+							Shift:         []uint{1},
+							JobType:       []uint{100},
+						},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: false,
+			mockAddCacheResponse: func() error {
+				return nil
+			},
+			mockCacheResponse: func() (string, error) {
+				return `{"ID":6,"CreatedAt":"2023-11-08T13:02:36.768974+05:30","UpdatedAt":"2023-11-08T13:02:36.768974+05:30","DeletedAt":null,"cid":1,"title":"Java Developer","minnp":"0","maxnp":"60","budget":"7000000","JobLocation":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Banglore"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Hyderbad"}],"Technology":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"java"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"Python"}],"WorkMode":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Online"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Offline"}],"job_description":"backend developer","Qualification":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BE"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BCA"}],"Shift":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Night"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Day"}],"JobType":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"FullTime"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"PartTime"}]}`, nil
+			},
+			mockRepoResponse: func() (models.Jobs, error) {
+				return models.Jobs{}, errors.New("test error")
+			},
+		},
+		{
+			// TODO: Add test cases.
+			name: "error while compare job qualification",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  1,
+						Jobs: models.JobApplicant{
+							Jid:           1,
+							Title:         "go",
+							Np:            "2",
+							Budget:        "100",
+							Salary:        "10000",
+							JobLocation:   []uint{1},
+							Technology:    []uint{1},
+							WorkMode:      []uint{1},
+							Qualification: []uint{100},
+							Shift:         []uint{1},
+							JobType:       []uint{1},
+						},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: false,
+			mockAddCacheResponse: func() error {
+				return nil
+			},
+			mockCacheResponse: func() (string, error) {
+				return `{"ID":6,"CreatedAt":"2023-11-08T13:02:36.768974+05:30","UpdatedAt":"2023-11-08T13:02:36.768974+05:30","DeletedAt":null,"cid":1,"title":"Java Developer","minnp":"0","maxnp":"60","budget":"7000000","JobLocation":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Banglore"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Hyderbad"}],"Technology":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"java"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"Python"}],"WorkMode":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Online"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Offline"}],"job_description":"backend developer","Qualification":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BE"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BCA"}],"Shift":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Night"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Day"}],"JobType":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"FullTime"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"PartTime"}]}`, nil
+			},
+			mockRepoResponse: func() (models.Jobs, error) {
+				return models.Jobs{}, errors.New("test error")
+			},
+		},
+		{
+			// TODO: Add test cases.
+			name: "error while compare job shift",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  1,
+						Jobs: models.JobApplicant{
+							Jid:           1,
+							Title:         "go",
+							Np:            "2",
+							Budget:        "100",
+							Salary:        "10000",
+							JobLocation:   []uint{1},
+							Technology:    []uint{1},
+							WorkMode:      []uint{1},
+							Qualification: []uint{1},
+							Shift:         []uint{100},
+							JobType:       []uint{1},
+						},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: false,
+			mockAddCacheResponse: func() error {
+				return nil
+			},
+			mockCacheResponse: func() (string, error) {
+				return `{"ID":6,"CreatedAt":"2023-11-08T13:02:36.768974+05:30","UpdatedAt":"2023-11-08T13:02:36.768974+05:30","DeletedAt":null,"cid":1,"title":"Java Developer","minnp":"0","maxnp":"60","budget":"7000000","JobLocation":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Banglore"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Hyderbad"}],"Technology":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"java"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"Python"}],"WorkMode":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Online"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Offline"}],"job_description":"backend developer","Qualification":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BE"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BCA"}],"Shift":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Night"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Day"}],"JobType":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"FullTime"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"PartTime"}]}`, nil
+			},
+			mockRepoResponse: func() (models.Jobs, error) {
+				return models.Jobs{}, errors.New("test error")
+			},
+		},
+		{
+			// TODO: Add test cases.
+			name: "error while compare job shift",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  1,
+						Jobs: models.JobApplicant{
+							Jid:           1,
+							Title:         "go",
+							Np:            "2",
+							Budget:        "100",
+							Salary:        "10000",
+							JobLocation:   []uint{1},
+							Technology:    []uint{100},
+							WorkMode:      []uint{1},
+							Qualification: []uint{1},
+							Shift:         []uint{1},
+							JobType:       []uint{1},
+						},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: false,
+			mockAddCacheResponse: func() error {
+				return nil
+			},
+			mockCacheResponse: func() (string, error) {
+				return `{"ID":6,"CreatedAt":"2023-11-08T13:02:36.768974+05:30","UpdatedAt":"2023-11-08T13:02:36.768974+05:30","DeletedAt":null,"cid":1,"title":"Java Developer","minnp":"0","maxnp":"60","budget":"7000000","JobLocation":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Banglore"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Hyderbad"}],"Technology":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"java"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"Python"}],"WorkMode":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Online"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Offline"}],"job_description":"backend developer","Qualification":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BE"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BCA"}],"Shift":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Night"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Day"}],"JobType":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"FullTime"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"PartTime"}]}`, nil
+			},
+			mockRepoResponse: func() (models.Jobs, error) {
+				return models.Jobs{}, errors.New("test error")
+			},
+		},
+		{
+			// TODO: Add test cases.
+			name: "error while compare work mode",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  1,
+						Jobs: models.JobApplicant{
+							Jid:           1,
+							Title:         "go",
+							Np:            "2",
+							Budget:        "100",
+							Salary:        "10000",
+							JobLocation:   []uint{1},
+							Technology:    []uint{1},
+							WorkMode:      []uint{100},
+							Qualification: []uint{1},
+							Shift:         []uint{1},
+							JobType:       []uint{1},
+						},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: false,
+			mockAddCacheResponse: func() error {
+				return nil
+			},
+			mockCacheResponse: func() (string, error) {
+				return `{"ID":6,"CreatedAt":"2023-11-08T13:02:36.768974+05:30","UpdatedAt":"2023-11-08T13:02:36.768974+05:30","DeletedAt":null,"cid":1,"title":"Java Developer","minnp":"0","maxnp":"60","budget":"7000000","JobLocation":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Banglore"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Hyderbad"}],"Technology":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"java"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"Python"}],"WorkMode":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Online"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Offline"}],"job_description":"backend developer","Qualification":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BE"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BCA"}],"Shift":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Night"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Day"}],"JobType":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"FullTime"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"PartTime"}]}`, nil
+			},
+			mockRepoResponse: func() (models.Jobs, error) {
+				return models.Jobs{}, errors.New("test error")
+			},
+		},
+		{
+			// TODO: Add test cases.
+			name: "success case from redis",
+			args: args{
+				ctx: context.Background(),
+				jobApplications: []models.RespondJobApplicant{
+					{
+						Name: "jeevan",
+						Jid:  1,
+						Jobs: models.JobApplicant{
+							Jid:           1,
+							Title:         "go",
+							Np:            "20",
+							Budget:        "10000",
+							Salary:        "10000",
+							JobLocation:   []uint{1},
+							Technology:    []uint{1},
+							WorkMode:      []uint{1},
+							Qualification: []uint{1},
+							Shift:         []uint{1},
+							JobType:       []uint{1},
+						},
+					},
+				},
+			},
 			want: []models.RespondJobApplicant{
-				// {
-				// 	Name: "afthab",
-				// 	Jid:  uint(1),
-				// 	Jobs: models.JobApplicant{
-				// 		Jid:            uint(1),
-				// 		Title:          "developer",
-				// 		Salary:         "100",
-				// 		Np:             "7",
-				// 		Budget:         "1000",
-				// 		JobLocation:    []uint{1, 2},
-				// 		Technology:     []uint{1},
-				// 		WorkMode:       []uint{1},
-				// 		JobDescription: "gooo",
-				// 		Qualification:  []uint{1, 2},
-				// 		Shift:          []uint{1, 2},
-				// 		JobType:        []uint{1, 2},
-				// 	},
-				// },
 				{
 					Name: "jeevan",
-					Jid:  uint(1),
+					Jid:  1,
 					Jobs: models.JobApplicant{
-						Jid:            uint(1),
-						Title:          "developer",
-						Salary:         "100",
-						Np:             "7",
-						Budget:         "1000",
-						JobLocation:    []uint{1, 2},
-						Technology:     []uint{1},
-						WorkMode:       []uint{1},
-						JobDescription: "gooo",
-						Qualification:  []uint{1, 2},
-						Shift:          []uint{1, 2},
-						JobType:        []uint{1, 2},
+						Jid:           1,
+						Title:         "go",
+						Np:            "20",
+						Budget:        "10000",
+						Salary:        "10000",
+						JobLocation:   []uint{1},
+						Technology:    []uint{1},
+						WorkMode:      []uint{1},
+						Qualification: []uint{1},
+						Shift:         []uint{1},
+						JobType:       []uint{1},
 					},
 				},
-				// {
-				// 	Name: "ravan",
-				// 	Jid:  uint(1),
-				// 	Jobs: models.JobApplicant{
-				// 		Jid:            uint(0),
-				// 		Title:          "developer",
-				// 		Salary:         "100",
-				// 		Np:             "7",
-				// 		Budget:         "1000",
-				// 		JobLocation:    []uint{1, 2},
-				// 		Technology:     []uint{1},
-				// 		WorkMode:       []uint{1},
-				// 		JobDescription: "gooo",
-				// 		Qualification:  []uint{1, 2},
-				// 		Shift:          []uint{1, 2},
-				// 		JobType:        []uint{1, 2},
-				// 	},
-				// },
 			},
 			wantErr: false,
-			setup: func(mockRepo repository.MockUserRepo) {
-				mockRepo.EXPECT().ViewJobDetailsBy(gomock.Any(), uint64(1)).Return(models.Jobs{
-					Model: gorm.Model{
-						ID: 1,
-					},
-					Company: models.Company{
-						Model: gorm.Model{
-							ID: 1,
-						},
-					},
-					Cid:   1,
-					Title: "developer",
-					// MinNoticePeriod: "0",
-					MaxNoticePeriod: "40",
-					Budget:          "2000",
-					JobLocation: []models.JobLocation{
-						{
-							Model: gorm.Model{
-								ID: uint(1),
-							},
-						},
-						{
-							Model: gorm.Model{
-								ID: uint(2),
-							},
-						},
-					},
-					Technology: []models.Technology{
-						{
-							Model: gorm.Model{ID: uint(1)},
-						},
-						{
-							Model: gorm.Model{ID: uint(2)},
-						},
-					},
-					WorkMode: []models.WorkMode{
-						{
-							Model: gorm.Model{ID: uint(1)},
-						},
-						{
-							Model: gorm.Model{ID: uint(2)},
-						},
-					},
-					Qualification: []models.Qualification{
-						{
-							Model: gorm.Model{
-								ID: uint(1),
-							},
-						},
-						{
-							Model: gorm.Model{
-								ID: uint(2),
-							},
-						},
-					},
-					Shift: []models.Shift{
-						{Model: gorm.Model{ID: uint(1)}},
-						{Model: gorm.Model{ID: uint(2)}},
-					},
-					JobType: []models.JobType{
-						{Model: gorm.Model{ID: uint(1)}},
-						{Model: gorm.Model{ID: uint(2)}},
-					},
-				}, nil).Times(1)
-
-				// mockRepo.EXPECT().ViewJobDetailsBy(gomock.Any(), uint64(2)).Return(models.Jobs{
-				// 	Model: gorm.Model{
-				// 		ID: 2,
-				// 	},
-				// 	Company: models.Company{
-				// 		Model: gorm.Model{
-				// 			ID: 1,
-				// 		},
-				// 	},
-				// 	Cid:   1,
-				// 	Title: "developer",
-				// 	// MinNoticePeriod: "0",
-				// 	MaxNoticePeriod: "40",
-				// 	Budget:          "2000",
-				// 	JobLocation: []models.JobLocation{
-				// 		{
-				// 			Model: gorm.Model{
-				// 				ID: uint(1),
-				// 			},
-				// 		},
-				// 		{
-				// 			Model: gorm.Model{
-				// 				ID: uint(2),
-				// 			},
-				// 		},
-				// 	},
-				// 	Technology: []models.Technology{
-				// 		{
-				// 			Model: gorm.Model{ID: uint(1)},
-				// 		},
-				// 		{
-				// 			Model: gorm.Model{ID: uint(2)},
-				// 		},
-				// 	},
-				// 	WorkMode: []models.WorkMode{
-				// 		{
-				// 			Model: gorm.Model{ID: uint(1)},
-				// 		},
-				// 		{
-				// 			Model: gorm.Model{ID: uint(2)},
-				// 		},
-				// 	},
-				// 	Qualification: []models.Qualification{
-				// 		{
-				// 			Model: gorm.Model{
-				// 				ID: uint(1),
-				// 			},
-				// 		},
-				// 		{
-				// 			Model: gorm.Model{
-				// 				ID: uint(2),
-				// 			},
-				// 		},
-				// 	},
-				// 	Shift: []models.Shift{
-				// 		{Model: gorm.Model{ID: uint(1)}},
-				// 		{Model: gorm.Model{ID: uint(2)}},
-				// 	},
-				// 	JobType: []models.JobType{
-				// 		{Model: gorm.Model{ID: uint(1)}},
-				// 		{Model: gorm.Model{ID: uint(2)}},
-				// 	},
-				// }, nil).Times(1)
+			mockAddCacheResponse: func() error {
+				return nil
+			},
+			mockCacheResponse: func() (string, error) {
+				return `{"ID":6,"CreatedAt":"2023-11-08T13:02:36.768974+05:30","UpdatedAt":"2023-11-08T13:02:36.768974+05:30","DeletedAt":null,"cid":1,"title":"Java Developer","minnp":"0","maxnp":"60","budget":"7000000","JobLocation":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Banglore"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"name":"Hyderbad"}],"Technology":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"java"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"technologyName":"Python"}],"WorkMode":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Online"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"workMode":"Offline"}],"job_description":"backend developer","Qualification":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BE"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"qualification":"BCA"}],"Shift":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Night"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"shift":"Day"}],"JobType":[{"ID":1,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"FullTime"},{"ID":2,"CreatedAt":"0001-01-01T00:00:00Z","UpdatedAt":"0001-01-01T00:00:00Z","DeletedAt":null,"jobType":"PartTime"}]}`, nil
+			},
+			mockRepoResponse: func() (models.Jobs, error) {
+				return models.Jobs{}, errors.New("test error")
 			},
 		},
 		{
-			name: "failure case budget conversion",
+			// TODO: Add test cases.
+			name: "failure case from redis",
 			args: args{
 				ctx: context.Background(),
 				jobApplications: []models.RespondJobApplicant{
 					{
 						Name: "jeevan",
-						Jid:  uint(1),
+						Jid:  1,
 						Jobs: models.JobApplicant{
-							Jid:            uint(1),
-							Title:          "developer",
-							Salary:         "100",
-							Np:             "7",
-							Budget:         "Ten thousand",
-							JobLocation:    []uint{1, 2},
-							Technology:     []uint{1},
-							WorkMode:       []uint{1},
-							JobDescription: "gooo",
-							Qualification:  []uint{1, 2},
-							Shift:          []uint{1, 2},
-							JobType:        []uint{1, 2},
+							Jid:           1,
+							Title:         "go",
+							Np:            "20",
+							Budget:        "10000",
+							Salary:        "10000",
+							JobLocation:   []uint{1},
+							Technology:    []uint{1},
+							WorkMode:      []uint{1},
+							Qualification: []uint{1},
+							Shift:         []uint{1},
+							JobType:       []uint{1},
 						},
 					},
 				},
 			},
-
 			want:    nil,
 			wantErr: false,
-			setup: func(mockRepo repository.MockUserRepo) {
-				mockRepo.EXPECT().ViewJobDetailsBy(gomock.Any(), uint64(1)).Return(models.Jobs{
-					Model: gorm.Model{
-						ID: 1,
-					},
-					Company: models.Company{
-						Model: gorm.Model{
-							ID: 1,
-						},
-					},
-					Cid:   1,
-					Title: "developer",
-					// MinNoticePeriod: "0",
-					MaxNoticePeriod: "40",
-					Budget:          "2000",
-					JobLocation: []models.JobLocation{
-						{
-							Model: gorm.Model{
-								ID: uint(1),
-							},
-						},
-						{
-							Model: gorm.Model{
-								ID: uint(2),
-							},
-						},
-					},
-					Technology: []models.Technology{
-						{
-							Model: gorm.Model{ID: uint(1)},
-						},
-						{
-							Model: gorm.Model{ID: uint(2)},
-						},
-					},
-					WorkMode: []models.WorkMode{
-						{
-							Model: gorm.Model{ID: uint(1)},
-						},
-						{
-							Model: gorm.Model{ID: uint(2)},
-						},
-					},
-					Qualification: []models.Qualification{
-						{
-							Model: gorm.Model{
-								ID: uint(1),
-							},
-						},
-						{
-							Model: gorm.Model{
-								ID: uint(2),
-							},
-						},
-					},
-					Shift: []models.Shift{
-						{Model: gorm.Model{ID: uint(1)}},
-						{Model: gorm.Model{ID: uint(2)}},
-					},
-					JobType: []models.JobType{
-						{Model: gorm.Model{ID: uint(1)}},
-						{Model: gorm.Model{ID: uint(2)}},
-					},
-				}, nil).Times(0)
-
+			mockAddCacheResponse: func() error {
+				return nil
+			},
+			mockCacheResponse: func() (string, error) {
+				return "", redis.Nil
+			},
+			mockRepoResponse: func() (models.Jobs, error) {
+				return models.Jobs{}, errors.New("test error")
 			},
 		},
 		{
-			name: "failure budget comparison",
+			// TODO: Add test cases.
+			name: "failure case to data to database",
 			args: args{
 				ctx: context.Background(),
 				jobApplications: []models.RespondJobApplicant{
 					{
 						Name: "jeevan",
-						Jid:  uint(1),
+						Jid:  1,
 						Jobs: models.JobApplicant{
-							Jid:            uint(1),
-							Title:          "developer",
-							Salary:         "100",
-							Np:             "7",
-							Budget:         "10000",
-							JobLocation:    []uint{1, 2},
-							Technology:     []uint{1},
-							WorkMode:       []uint{1},
-							JobDescription: "gooo",
-							Qualification:  []uint{1, 2},
-							Shift:          []uint{1, 2},
-							JobType:        []uint{1, 2},
+							Jid:           1,
+							Title:         "go",
+							Np:            "20",
+							Budget:        "10000",
+							Salary:        "10000",
+							JobLocation:   []uint{1},
+							Technology:    []uint{1},
+							WorkMode:      []uint{1},
+							Qualification: []uint{1},
+							Shift:         []uint{1},
+							JobType:       []uint{1},
 						},
 					},
 				},
 			},
-
 			want:    nil,
 			wantErr: false,
-			setup: func(mockRepo repository.MockUserRepo) {
-				mockRepo.EXPECT().ViewJobDetailsBy(gomock.Any(), uint64(1)).Return(models.Jobs{
-					Model: gorm.Model{
-						ID: 1,
-					},
-					Company: models.Company{
-						Model: gorm.Model{
-							ID: 1,
-						},
-					},
-					Cid:   1,
-					Title: "developer",
-					// MinNoticePeriod: "0",
-					MaxNoticePeriod: "40",
-					Budget:          "2000",
-					JobLocation: []models.JobLocation{
-						{
-							Model: gorm.Model{
-								ID: uint(1),
-							},
-						},
-						{
-							Model: gorm.Model{
-								ID: uint(2),
-							},
-						},
-					},
-					Technology: []models.Technology{
-						{
-							Model: gorm.Model{ID: uint(1)},
-						},
-						{
-							Model: gorm.Model{ID: uint(2)},
-						},
-					},
-					WorkMode: []models.WorkMode{
-						{
-							Model: gorm.Model{ID: uint(1)},
-						},
-						{
-							Model: gorm.Model{ID: uint(2)},
-						},
-					},
-					Qualification: []models.Qualification{
-						{
-							Model: gorm.Model{
-								ID: uint(1),
-							},
-						},
-						{
-							Model: gorm.Model{
-								ID: uint(2),
-							},
-						},
-					},
-					Shift: []models.Shift{
-						{Model: gorm.Model{ID: uint(1)}},
-						{Model: gorm.Model{ID: uint(2)}},
-					},
-					JobType: []models.JobType{
-						{Model: gorm.Model{ID: uint(1)}},
-						{Model: gorm.Model{ID: uint(2)}},
-					},
-				}, nil).Times(0)
-
+			mockAddCacheResponse: func() error {
+				return errors.New("test error")
 			},
-		},
-		{
-			name: "failure notice period comparison",
-			args: args{
-				ctx: context.Background(),
-				jobApplications: []models.RespondJobApplicant{
-					{
-						Name: "jeevan",
-						Jid:  uint(1),
-						Jobs: models.JobApplicant{
-							Jid:            uint(1),
-							Title:          "developer",
-							Salary:         "100",
-							Np:             "20",
-							Budget:         "10000",
-							JobLocation:    []uint{1, 2},
-							Technology:     []uint{1},
-							WorkMode:       []uint{1},
-							JobDescription: "gooo",
-							Qualification:  []uint{1, 2},
-							Shift:          []uint{1, 2},
-							JobType:        []uint{1, 2},
-						},
-					},
-				},
+			mockCacheResponse: func() (string, error) {
+				return "", redis.Nil
 			},
-
-			want:    nil,
-			wantErr: false,
-			setup: func(mockRepo repository.MockUserRepo) {
-				mockRepo.EXPECT().ViewJobDetailsBy(gomock.Any(), uint64(1)).Return(models.Jobs{
-					Model: gorm.Model{
-						ID: 1,
-					},
-					Company: models.Company{
-						Model: gorm.Model{
-							ID: 1,
-						},
-					},
-					Cid:   1,
-					Title: "developer",
-					// MinNoticePeriod: "0",
-					MaxNoticePeriod: "40",
-					Budget:          "two thousand",
-					JobLocation: []models.JobLocation{
-						{
-							Model: gorm.Model{
-								ID: uint(1),
-							},
-						},
-						{
-							Model: gorm.Model{
-								ID: uint(2),
-							},
-						},
-					},
-					Technology: []models.Technology{
-						{
-							Model: gorm.Model{ID: uint(1)},
-						},
-						{
-							Model: gorm.Model{ID: uint(2)},
-						},
-					},
-					WorkMode: []models.WorkMode{
-						{
-							Model: gorm.Model{ID: uint(1)},
-						},
-						{
-							Model: gorm.Model{ID: uint(2)},
-						},
-					},
-					Qualification: []models.Qualification{
-						{
-							Model: gorm.Model{
-								ID: uint(1),
-							},
-						},
-						{
-							Model: gorm.Model{
-								ID: uint(2),
-							},
-						},
-					},
-					Shift: []models.Shift{
-						{Model: gorm.Model{ID: uint(1)}},
-						{Model: gorm.Model{ID: uint(2)}},
-					},
-					JobType: []models.JobType{
-						{Model: gorm.Model{ID: uint(1)}},
-						{Model: gorm.Model{ID: uint(2)}},
-					},
-				}, nil).Times(0)
-
+			mockRepoResponse: func() (models.Jobs, error) {
+				return models.Jobs{}, nil
 			},
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mc := gomock.NewController(t)
+			mockCache := cache.NewMockCaching(mc)
+			mockCache.EXPECT().GetCahceData(gomock.Any(), gomock.Any()).Return(tt.mockCacheResponse()).AnyTimes()
+			mockCache.EXPECT().AddToCache(tt.args.ctx, gomock.Any(), gomock.Any()).Return(tt.mockAddCacheResponse()).AnyTimes()
+
 			mockRepo := repository.NewMockUserRepo(mc)
-			tt.setup(*mockRepo)
+			mockRepo.EXPECT().ViewJobDetailsBy(gomock.Any(), gomock.Any()).Return(tt.mockRepoResponse()).AnyTimes()
 
-			s := &Service{
-				UserRepo: mockRepo,
-			}
-			// if tt.mockResponse != nil {
-			// 	mockRepo.EXPECT().ViewJobDetailsBy(tt.args.ctx, uint(1)).Return(tt.mockResponse()).AnyTimes()
-			// }
-
-			// s, _ := NewService(mockRepo, &auth.Auth{})
+			s, _ := NewService(mockRepo, &auth.Auth{}, mockCache)
 			got, err := s.FilterJob(tt.args.ctx, tt.args.jobApplications)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Service.AddJobDetails() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Service.FilterJob() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Service.AddJobDetails() = %v, want %v", got, tt.want)
+				t.Errorf("Service.FilterJob() = %v, want %v", got, tt.want)
 			}
 		})
 	}

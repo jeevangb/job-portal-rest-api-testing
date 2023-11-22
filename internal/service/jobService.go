@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"jeevan/jobportal/internal/models"
-	"log"
 	"strconv"
 	"sync"
 
 	"github.com/go-redis/redis/v8"
-
 	"gorm.io/gorm"
 )
 
@@ -157,7 +155,6 @@ func (s *Service) ViewJobByCid(ctx context.Context, cid uint64) ([]models.Jobs, 
 //	}
 func (s *Service) FilterJob(ctx context.Context, jobApplications []models.RespondJobApplicant) ([]models.RespondJobApplicant, error) {
 	var FilterJobData []models.RespondJobApplicant
-	fmt.Println(jobApplications)
 
 	ch := make(chan models.RespondJobApplicant)
 	wg := new(sync.WaitGroup)
@@ -166,58 +163,31 @@ func (s *Service) FilterJob(ctx context.Context, jobApplications []models.Respon
 		wg.Add(1)
 		go func(jobApplication models.RespondJobApplicant) {
 			defer wg.Done()
+			var jobdata models.Jobs
 
-			// Create a new Redis client for each goroutine
-			redisClient := redis.NewClient(&redis.Options{
-				Addr:     "localhost:6379", // Redis server address
-				Password: "",               // No password by default
-				DB:       0,                // Default DB
-			})
-
-			// Check if the Redis client is connected successfully
-			_, err := redisClient.Ping(ctx).Result()
-			if err != nil {
-				log.Fatalf("Error connecting to Redis: %v", err)
-				return
-			}
-
-			// Use Redis to retrieve job details
-			jobDetailKey := fmt.Sprintf("job:%d", jobApplication.Jid)
-
-			jobDetailStr, err := redisClient.Get(ctx, jobDetailKey).Result()
-
-			if err != nil {
-
-				// If the key is not in Redis, fetch it from the database
-				val, err := s.UserRepo.ViewJobDetailsBy(ctx, uint64(jobApplication.Jid))
-				fmt.Println("////////////////////////////////////////////", val)
+			data, err := s.rdb.GetCahceData(ctx, jobApplication.Jid)
+			if err == redis.Nil {
+				databasedata, err := s.UserRepo.ViewJobDetailsBy(ctx, uint64(jobApplication.Jid))
 				if err != nil {
 					return
 				}
-				// Serialize the job details to JSON before storing in Redis
-				valJSON, err := json.Marshal(val)
+				err = s.rdb.AddToCache(ctx, jobApplication.Jid, databasedata)
 				if err != nil {
 					return
 				}
 
-				// Store the job details in Redis
-				err = redisClient.Set(ctx, jobDetailKey, valJSON, 0).Err()
-				fmt.Println(err)
+			} else {
+
+				err = json.Unmarshal([]byte(data), &jobdata)
 				if err != nil {
 					return
 				}
-				jobDetailStr = string(valJSON)
 
 			}
 
 			// Deserialize job details
-			var jobDetail models.Jobs
-			err = json.Unmarshal([]byte(jobDetailStr), &jobDetail)
-			if err != nil {
-				return
-			}
 
-			b := checkApplicantsCriteria(jobApplication, jobDetail)
+			b := checkApplicantsCriteria(jobApplication, jobdata)
 			if b {
 				ch <- jobApplication
 			}
@@ -238,29 +208,25 @@ func (s *Service) FilterJob(ctx context.Context, jobApplications []models.Respon
 }
 
 func checkApplicantsCriteria(v models.RespondJobApplicant, jobdetail models.Jobs) bool {
+
 	////////////////////////////////filter budget
 	applicantBudget, err := strconv.Atoi(v.Jobs.Budget)
 	if err != nil {
 		return false
 	}
+
 	hrBudget, err := strconv.Atoi(jobdetail.Budget)
+
 	if err != nil {
 		panic("error while conversion budget data from hr posting")
 	}
 	if applicantBudget > hrBudget {
-
 		return false
 
 	}
-	/////////////////////////////////////////////filter notice period
-	// hrMinNoticePeriod, err := strconv.Atoi(jobdetail.MinNoticePeriod)
-	// fmt.Println(hrMinNoticePeriod)
-	// if err != nil {
-
-	// 	panic("error while conversion min notice  period data from hr posting")
-	// }
 	hrMaxNoticePeriod, err := strconv.Atoi(jobdetail.MaxNoticePeriod)
 	if err != nil {
+
 		return false
 	}
 	applicantNoticePeriod, err := strconv.Atoi(v.Jobs.Np)
@@ -280,6 +246,7 @@ func checkApplicantsCriteria(v models.RespondJobApplicant, jobdetail models.Jobs
 		count = 0
 		for _, v2 := range jobdetail.JobLocation {
 			if v1 == v2.ID {
+				fmt.Println(v1, v2)
 				count++
 
 			}

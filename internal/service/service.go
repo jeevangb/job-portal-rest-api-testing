@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"jeevan/jobportal/internal/auth"
+	"jeevan/jobportal/internal/cache"
 	"jeevan/jobportal/internal/models"
 	"jeevan/jobportal/internal/repository"
 )
@@ -12,6 +13,7 @@ import (
 type Service struct {
 	UserRepo repository.UserRepo
 	auth     auth.Authentication
+	rdb      cache.Caching
 }
 
 //go:generate mockgen -source=service.go -destination=service_mocks.go -package=service
@@ -30,7 +32,7 @@ type UserService interface {
 	ViewJobByCid(ctx context.Context, cid uint64) ([]models.Jobs, error)
 }
 
-func NewService(userRepo repository.UserRepo, a auth.Authentication) (UserService, error) {
+func NewService(userRepo repository.UserRepo, a auth.Authentication, redis cache.Caching) (UserService, error) {
 
 	if userRepo == nil {
 		return nil, errors.New("interface cannot be null")
@@ -38,5 +40,6 @@ func NewService(userRepo repository.UserRepo, a auth.Authentication) (UserServic
 	return &Service{
 		UserRepo: userRepo,
 		auth:     a,
+		rdb:      redis,
 	}, nil
 }
