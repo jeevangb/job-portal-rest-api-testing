@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"jeevan/jobportal/config"
 	"jeevan/jobportal/internal/auth"
 	"jeevan/jobportal/internal/cache"
 	"jeevan/jobportal/internal/database"
@@ -28,24 +29,24 @@ func main() {
 }
 
 func StartApp() error {
-	//**************************************************************************************
+	cfg := config.GetConfig()
+
+	fmt.Println(cfg.DatabaseConfig)
+
+	log.Info().Interface("cfg", cfg).Msg("config")
 	// initializing the authentication support
 	log.Info().Msg("main started : initializing the authentication support")
 
 	//reading the private key file
-	privatePEM, err := os.ReadFile("private.pem")
-	if err != nil {
-		// %w is used for error wraping
-		return fmt.Errorf("error in reading auth private key : %w", err)
-	}
+	privatePEM := []byte(cfg.PrivatePublicKey.PrivateKey)
+	publicPEM := []byte(cfg.PrivatePublicKey.PublicKey)
+
 	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(privatePEM)
+	fmt.Println("[[[[[[[[[[[[[[]]]]]]]]]]]]]]", privatePEM)
 	if err != nil {
 		return fmt.Errorf("error in parsing auth private key : %w", err)
 	}
-	publicPEM, err := os.ReadFile("pubkey.pem")
-	if err != nil {
-		return fmt.Errorf("error in reading auth public key : %w", err)
-	}
+
 	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(publicPEM)
 	if err != nil {
 		return fmt.Errorf("error in parsing auth public key : %w", err)
@@ -60,7 +61,7 @@ func StartApp() error {
 
 	log.Info().Msg("main started : initializing the data")
 
-	db, err := database.Connection()
+	db, err := database.Connection(cfg.DatabaseConfig)
 	if err != nil {
 		return fmt.Errorf("error in opening the database connection : %w", err)
 	}
@@ -79,7 +80,12 @@ func StartApp() error {
 	}
 	////////////////////////////////////////////
 	///redis connection
-	rdb := database.ResdisConnection()
+	rdb := database.ResdisConnection(cfg.RedisConfig)
+
+	_, err = rdb.Ping(ctx).Result()
+	if err != nil {
+		return fmt.Errorf("redis is not connected: %w", err)
+	}
 	// service.NewService(rdb)
 	rdbinter := cache.NewRdbLayer(rdb)
 
@@ -97,10 +103,10 @@ func StartApp() error {
 	//*******************************************************************************
 	// initializing the http server
 	api := http.Server{
-		Addr:         ":8080",
-		ReadTimeout:  8000 * time.Second,
-		WriteTimeout: 800 * time.Second,
-		IdleTimeout:  800 * time.Second,
+		Addr:         fmt.Sprintf("%s:%s", cfg.AppConfig.AppHost, cfg.AppConfig.Port),
+		ReadTimeout:  time.Duration(cfg.AppConfig.ReadTimeout) * time.Second,
+		WriteTimeout: time.Duration(cfg.AppConfig.WriteTimeout) * time.Second,
+		IdleTimeout:  time.Duration(cfg.AppConfig.IdleTimeout) * time.Second,
 		Handler:      handler.SetApi(a, svc),
 	}
 

@@ -1,12 +1,16 @@
 package database
 
-import "github.com/go-redis/redis/v8"
+import (
+	"jeevan/jobportal/config"
 
-func ResdisConnection() *redis.Client {
+	"github.com/go-redis/redis/v8"
+)
+
+func ResdisConnection(cfg config.RedisConfig) *redis.Client {
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379", // Redis server address
-		Password: "",               // No password by default
-		DB:       0,                // Default DB
+		Addr:     cfg.RedisAddr,     //address
+		Password: cfg.RedisPassword, // No password by default
+		DB:       cfg.RedisDb,       // Default DB
 	})
 	return redisClient
 }
