@@ -13,10 +13,11 @@ services:
       - .env
       - .database.env
       - .redis.env
-      
+      - .private.env
+      - .public.env
     depends_on:
       - postgres
-    # restart: always
+    restart: always
   postgres:
     container_name: postgres
     image: postgres

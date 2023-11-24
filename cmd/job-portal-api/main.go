@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"jeevan/jobportal/config"
 	"jeevan/jobportal/internal/auth"
@@ -38,8 +39,26 @@ func StartApp() error {
 	log.Info().Msg("main started : initializing the authentication support")
 
 	//reading the private key file
-	privatePEM := []byte(cfg.PrivatePublicKey.PrivateKey)
-	publicPEM := []byte(cfg.PrivatePublicKey.PublicKey)
+	fmt.Println()
+
+	fmt.Println("PKKKKKKKKKKK===,", cfg.PrivatePublicKey)
+	decodedPVKBytes, err := base64.StdEncoding.DecodeString(cfg.PrivatePublicKey.PrivateKey)
+	if err != nil {
+		fmt.Println("Error decoding base64:", err)
+		return err
+	}
+
+	decodedPKBytes, err := base64.StdEncoding.DecodeString(cfg.PrivatePublicKey.PublicKey)
+	if err != nil {
+		fmt.Println("Error decoding base64:", err)
+		return err
+	}
+
+	// Converting the decoded bytes to a string
+	// decodedPKString := string(decodedPVKBytes)
+
+	privatePEM := []byte(decodedPVKBytes)
+	publicPEM := []byte(decodedPKBytes)
 
 	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(privatePEM)
 	fmt.Println("[[[[[[[[[[[[[[]]]]]]]]]]]]]]", privatePEM)

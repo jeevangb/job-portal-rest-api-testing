@@ -3,6 +3,7 @@ module jeevan/jobportal
 go 1.21.1
 
 require (
+	github.com/Netflix/go-env v0.0.0-20220526054621-78278af1949d
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-playground/assert/v2 v2.2.0
 	github.com/go-playground/validator/v10 v10.15.5
@@ -17,7 +18,6 @@ require (
 )
 
 require (
-	github.com/Netflix/go-env v0.0.0-20220526054621-78278af1949d // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
