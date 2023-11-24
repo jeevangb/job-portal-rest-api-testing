@@ -30,6 +30,8 @@ type UserService interface {
 	ViewAllJobs(ctx context.Context) ([]models.Jobs, error)
 	ViewJobById(ctx context.Context, jid uint64) (models.Jobs, error)
 	ViewJobByCid(ctx context.Context, cid uint64) ([]models.Jobs, error)
+
+	CheckUserDataAndSendOtp(ctx context.Context, userData models.ForgotPasswod) error
 }
 
 func NewService(userRepo repository.UserRepo, a auth.Authentication, redis cache.Caching) (UserService, error) {

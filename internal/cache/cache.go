@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"jeevan/jobportal/internal/models"
 	"strconv"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -17,6 +18,7 @@ type Rdb struct {
 type Caching interface {
 	AddToCache(ctx context.Context, jid uint, jdata models.Jobs) error
 	GetCahceData(ctx context.Context, jid uint) (string, error)
+	AddToCacheRedis(ctx context.Context, emailKey string, otpValue string) error
 }
 
 func NewRdbLayer(rdbclnt *redis.Client) Caching {
@@ -40,6 +42,11 @@ func (c *Rdb) AddToCache(ctx context.Context, jid uint, jdata models.Jobs) error
 		return err
 	}
 	err = c.rdb.Set(ctx, jobId, val, 0).Err()
+	return err
+
+}
+func (c *Rdb) AddToCacheRedis(ctx context.Context, emailKey string, otpValue string) error {
+	err := c.rdb.Set(ctx, emailKey, otpValue, 3*time.Minute).Err()
 	return err
 
 }

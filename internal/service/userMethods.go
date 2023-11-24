@@ -13,6 +13,26 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+func (s *Service) CheckUserDataAndSendOtp(ctx context.Context, userData models.ForgotPasswod) error {
+	resetData, err := s.UserRepo.CheckEmail(ctx, userData.Email)
+	if err != nil {
+		return err
+	}
+	if resetData.Dob != userData.Dob {
+		return errors.New("date of birth not exist")
+	}
+
+	otpData, err := pkg.GenerateOneTimePassword(userData.Email)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to generate otp")
+	}
+	err = s.rdb.AddToCacheRedis(ctx, userData.Email, otpData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Service) UserLogin(ctx context.Context, userData models.NewUser) (string, error) {
 	// checcking the email in the db
 	var userDetails models.User
@@ -55,6 +75,7 @@ func (s *Service) UserSignup(ctx context.Context, userData models.NewUser) (mode
 		Username:     userData.Username,
 		Email:        userData.Email,
 		PasswordHash: hashedPass,
+		Dob:          userData.Dob,
 	}
 	userDetails, err = s.UserRepo.CreateUser(ctx, userDetails)
 	if err != nil {

@@ -39,9 +39,6 @@ func StartApp() error {
 	log.Info().Msg("main started : initializing the authentication support")
 
 	//reading the private key file
-	fmt.Println()
-
-	fmt.Println("PKKKKKKKKKKK===,", cfg.PrivatePublicKey)
 	decodedPVKBytes, err := base64.StdEncoding.DecodeString(cfg.PrivatePublicKey.PrivateKey)
 	if err != nil {
 		fmt.Println("Error decoding base64:", err)
@@ -61,7 +58,6 @@ func StartApp() error {
 	publicPEM := []byte(decodedPKBytes)
 
 	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(privatePEM)
-	fmt.Println("[[[[[[[[[[[[[[]]]]]]]]]]]]]]", privatePEM)
 	if err != nil {
 		return fmt.Errorf("error in parsing auth private key : %w", err)
 	}
