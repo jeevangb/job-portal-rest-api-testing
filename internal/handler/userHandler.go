@@ -13,6 +13,38 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+func (h *Handler) ResetPassword(c *gin.Context) {
+	ctx := c.Request.Context()
+	traceid, ok := ctx.Value(middleware.TraceIDKey).(string)
+	if !ok {
+		log.Error().Msg("traceid missing from context")
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": http.StatusText(http.StatusInternalServerError),
+		})
+		return
+	}
+	var UserResetData models.ResetPassword
+
+	err := json.NewDecoder(c.Request.Body).Decode(&UserResetData)
+	if err != nil {
+		log.Error().Err(err).Str("trace id", traceid)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": "please provide valid email,otp,new password and confirmation password",
+		})
+		return
+	}
+	err = h.Service.ResetPassword(ctx, UserResetData)
+	if err != nil {
+		log.Error().Err(err).Str("trace id", traceid)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, "")
+
+}
+
 func (h *Handler) ForgotPasswod(c *gin.Context) {
 	ctx := c.Request.Context()
 	traceid, ok := ctx.Value(middleware.TraceIDKey).(string)

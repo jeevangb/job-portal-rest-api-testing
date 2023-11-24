@@ -21,3 +21,10 @@ type ForgotPasswod struct {
 	Email string `json:"email"`
 	Dob   string `json:"dob"`
 }
+
+type ResetPassword struct {
+	Email           string `json:"email" validate:"required"`
+	NewPassword     string `json:"newpassword" validate:"required"`
+	ConfirmPassword string `json:"confirmpassword" validate:"required"`
+	Otp             string `json:"otp" validate:"required"`
+}

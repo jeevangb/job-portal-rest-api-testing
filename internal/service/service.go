@@ -32,6 +32,7 @@ type UserService interface {
 	ViewJobByCid(ctx context.Context, cid uint64) ([]models.Jobs, error)
 
 	CheckUserDataAndSendOtp(ctx context.Context, userData models.ForgotPasswod) error
+	ResetPassword(ctx context.Context, resetData models.ResetPassword) error
 }
 
 func NewService(userRepo repository.UserRepo, a auth.Authentication, redis cache.Caching) (UserService, error) {

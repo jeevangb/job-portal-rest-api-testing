@@ -27,6 +27,8 @@ type UserRepo interface {
 	FindJob(ctx context.Context, cid uint64) ([]models.Jobs, error)
 	FindAllJobs(ctx context.Context) ([]models.Jobs, error)
 	ViewJobDetailsBy(ctx context.Context, jid uint64) (models.Jobs, error)
+
+	UpdatePassword(ctx context.Context, email string, resetPassword string) error
 }
 
 func NewRepository(db *gorm.DB) (UserRepo, error) {

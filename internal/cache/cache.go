@@ -19,6 +19,7 @@ type Caching interface {
 	AddToCache(ctx context.Context, jid uint, jdata models.Jobs) error
 	GetCahceData(ctx context.Context, jid uint) (string, error)
 	AddToCacheRedis(ctx context.Context, emailKey string, otpValue string) error
+	CheckCacheOtp(ctx context.Context, emailKey string) (string, error)
 }
 
 func NewRdbLayer(rdbclnt *redis.Client) Caching {
@@ -27,6 +28,11 @@ func NewRdbLayer(rdbclnt *redis.Client) Caching {
 	}
 }
 
+func (c *Rdb) CheckCacheOtp(ctx context.Context, emailKey string) (string, error) {
+	otp, err := c.rdb.Get(ctx, emailKey).Result()
+	return otp, err
+
+}
 func (c *Rdb) GetCahceData(ctx context.Context, jid uint) (string, error) {
 
 	jobID := strconv.FormatUint(uint64(jid), 10)

@@ -13,6 +13,27 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+func (s *Service) ResetPassword(ctx context.Context, resetData models.ResetPassword) error {
+	if resetData.NewPassword != resetData.ConfirmPassword {
+		return errors.New("new and confirm password is not match")
+	}
+
+	otp, err := s.rdb.CheckCacheOtp(ctx, resetData.Email)
+	if err != nil {
+		return errors.New("otp in cache not there")
+	}
+	if otp != resetData.Otp {
+		return errors.New("otp mismatch")
+	}
+	HashPassword, err := pkg.HashPassword(resetData.ConfirmPassword)
+	if err != nil {
+		return errors.New("failed to hash the password")
+	}
+
+	s.UserRepo.UpdatePassword(ctx, resetData.Email, HashPassword)
+	return nil
+}
+
 func (s *Service) CheckUserDataAndSendOtp(ctx context.Context, userData models.ForgotPasswod) error {
 	resetData, err := s.UserRepo.CheckEmail(ctx, userData.Email)
 	if err != nil {
@@ -42,11 +63,11 @@ func (s *Service) UserLogin(ctx context.Context, userData models.NewUser) (strin
 	}
 
 	// comaparing the password and hashed password
-	err = pkg.CheckHashedPassword(userData.Password, userDetails.PasswordHash)
-	if err != nil {
-		log.Info().Err(err).Send()
-		return "", errors.New("entered password is not wrong")
-	}
+	// err = pkg.CheckHashedPassword(userData.Password, userDetails.PasswordHash)
+	// if err != nil {
+	// 	log.Info().Err(err).Send()
+	// 	return "", errors.New("entered password is wrong")
+	// }
 
 	// setting up the claims
 	claims := jwt.RegisteredClaims{

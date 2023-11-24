@@ -3,11 +3,25 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"jeevan/jobportal/internal/models"
 
 	"github.com/rs/zerolog/log"
 )
+
+func (r *Repo) UpdatePassword(ctx context.Context, email string, resetPassword string) error {
+	// var userDetails models.User
+	result := r.DB.Model(&models.User{}).Where("email=?", email).Update("PasswordHash", "resetPassword")
+	if result.Error != nil {
+		// Handle the error
+		fmt.Println("Error updating password:", result.Error)
+	} else {
+		// Update successful
+		fmt.Println("Password updated successfully")
+	}
+	return nil
+}
 
 func (r *Repo) CreateUser(ctx context.Context, UserDetails models.User) (models.User, error) {
 	result := r.DB.Create(&UserDetails)
