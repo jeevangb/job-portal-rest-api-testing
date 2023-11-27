@@ -3,11 +3,13 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"jeevan/jobportal/internal/models"
 	"strconv"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/rs/zerolog/log"
 )
 
 type Rdb struct {
@@ -30,8 +32,11 @@ func NewRdbLayer(rdbclnt *redis.Client) Caching {
 
 func (c *Rdb) CheckCacheOtp(ctx context.Context, emailKey string) (string, error) {
 	otp, err := c.rdb.Get(ctx, emailKey).Result()
-	return otp, err
-
+	if err != nil {
+		log.Error().Err(err).Msg("failed to fetch data from redis cache")
+		return "", errors.New("please provide valid email")
+	}
+	return otp, nil
 }
 func (c *Rdb) GetCahceData(ctx context.Context, jid uint) (string, error) {
 
@@ -53,6 +58,10 @@ func (c *Rdb) AddToCache(ctx context.Context, jid uint, jdata models.Jobs) error
 }
 func (c *Rdb) AddToCacheRedis(ctx context.Context, emailKey string, otpValue string) error {
 	err := c.rdb.Set(ctx, emailKey, otpValue, 3*time.Minute).Err()
-	return err
+	if err != redis.Nil {
+		log.Error().Err(err).Msg("failed to set data to the redis cache")
+		return errors.New("otp sent failed")
+	}
+	return redis.Nil
 
 }

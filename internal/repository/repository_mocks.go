@@ -129,6 +129,20 @@ func (mr *MockUserRepoMockRecorder) FindJob(ctx, cid any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindJob", reflect.TypeOf((*MockUserRepo)(nil).FindJob), ctx, cid)
 }
 
+// UpdatePassword mocks base method.
+func (m *MockUserRepo) UpdatePassword(ctx context.Context, email, resetPassword string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePassword", ctx, email, resetPassword)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePassword indicates an expected call of UpdatePassword.
+func (mr *MockUserRepoMockRecorder) UpdatePassword(ctx, email, resetPassword any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePassword", reflect.TypeOf((*MockUserRepo)(nil).UpdatePassword), ctx, email, resetPassword)
+}
+
 // ViewCompanies mocks base method.
 func (m *MockUserRepo) ViewCompanies(ctx context.Context) ([]models.Company, error) {
 	m.ctrl.T.Helper()

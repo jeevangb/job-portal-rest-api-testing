@@ -53,6 +53,35 @@ func (mr *MockCachingMockRecorder) AddToCache(ctx, jid, jdata any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToCache", reflect.TypeOf((*MockCaching)(nil).AddToCache), ctx, jid, jdata)
 }
 
+// AddToCacheRedis mocks base method.
+func (m *MockCaching) AddToCacheRedis(ctx context.Context, emailKey, otpValue string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddToCacheRedis", ctx, emailKey, otpValue)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddToCacheRedis indicates an expected call of AddToCacheRedis.
+func (mr *MockCachingMockRecorder) AddToCacheRedis(ctx, emailKey, otpValue any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToCacheRedis", reflect.TypeOf((*MockCaching)(nil).AddToCacheRedis), ctx, emailKey, otpValue)
+}
+
+// CheckCacheOtp mocks base method.
+func (m *MockCaching) CheckCacheOtp(ctx context.Context, emailKey string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckCacheOtp", ctx, emailKey)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckCacheOtp indicates an expected call of CheckCacheOtp.
+func (mr *MockCachingMockRecorder) CheckCacheOtp(ctx, emailKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckCacheOtp", reflect.TypeOf((*MockCaching)(nil).CheckCacheOtp), ctx, emailKey)
+}
+
 // GetCahceData mocks base method.
 func (m *MockCaching) GetCahceData(ctx context.Context, jid uint) (string, error) {
 	m.ctrl.T.Helper()

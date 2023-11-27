@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"jeevan/jobportal/internal/middleware"
@@ -13,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// Reset the password it takes email,otp,new password and confirmation password
 func (h *Handler) ResetPassword(c *gin.Context) {
 	ctx := c.Request.Context()
 	traceid, ok := ctx.Value(middleware.TraceIDKey).(string)
@@ -24,7 +24,6 @@ func (h *Handler) ResetPassword(c *gin.Context) {
 		return
 	}
 	var UserResetData models.ResetPassword
-
 	err := json.NewDecoder(c.Request.Body).Decode(&UserResetData)
 	if err != nil {
 		log.Error().Err(err).Str("trace id", traceid)
@@ -41,10 +40,10 @@ func (h *Handler) ResetPassword(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, "")
-
+	c.JSON(http.StatusOK, "passwod reset successfully")
 }
 
+// forgot password function takes email and dob and send otp to their email to reset the password
 func (h *Handler) ForgotPasswod(c *gin.Context) {
 	ctx := c.Request.Context()
 	traceid, ok := ctx.Value(middleware.TraceIDKey).(string)
@@ -74,10 +73,11 @@ func (h *Handler) ForgotPasswod(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, "")
+	c.JSON(http.StatusOK, "otp sent successfully")
 
 }
 
+// login function takes email and passoword to login
 func (h *Handler) Login(c *gin.Context) {
 	ctx := c.Request.Context()
 	traceid, ok := ctx.Value(middleware.TraceIDKey).(string)
@@ -88,9 +88,7 @@ func (h *Handler) Login(c *gin.Context) {
 		})
 		return
 	}
-
 	var userData models.NewUser
-
 	err := json.NewDecoder(c.Request.Body).Decode(&userData)
 	if err != nil {
 		log.Error().Err(err).Str("trace id", traceid)
@@ -110,12 +108,11 @@ func (h *Handler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"token": token,
 	})
-
 }
 
+// User Signup function
 func (h *Handler) SignUp(c *gin.Context) {
 	ctx := c.Request.Context()
-
 	traceid, ok := ctx.Value(middleware.TraceIDKey).(string)
 	if !ok {
 		log.Error().Msg("traceid missing from context")
@@ -124,10 +121,7 @@ func (h *Handler) SignUp(c *gin.Context) {
 		})
 		return
 	}
-	fmt.Println("///////////////////////////////")
 	var userData models.NewUser
-	fmt.Println("[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]", userData)
-
 	err := json.NewDecoder(c.Request.Body).Decode(&userData)
 	if err != nil {
 		log.Error().Err(err).Str("trace id", traceid)
@@ -136,7 +130,6 @@ func (h *Handler) SignUp(c *gin.Context) {
 		})
 		return
 	}
-
 	validate := validator.New()
 	err = validate.Struct(userData)
 	if err != nil {
@@ -146,7 +139,6 @@ func (h *Handler) SignUp(c *gin.Context) {
 		})
 		return
 	}
-
 	userDetails, err := h.Service.UserSignup(ctx, userData)
 	if err != nil {
 		log.Error().Err(err).Str("trace id", traceid)
@@ -155,7 +147,5 @@ func (h *Handler) SignUp(c *gin.Context) {
 		})
 		return
 	}
-
 	c.JSON(http.StatusOK, userDetails)
-
 }

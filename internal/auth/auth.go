@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/rs/zerolog/log"
 )
 
 type ctxKey string
@@ -31,16 +32,16 @@ func NewAuth(privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) (Authenticati
 		publickey:  publicKey,
 	}, nil
 }
+
 func (a *Auth) GenerateAuthToken(claims jwt.RegisteredClaims) (string, error) {
 	// creates a new token with signing and claims
 	tkn := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-
 	// signing our token with the private key
 	token, err := tkn.SignedString(a.privateKey)
 	if err != nil {
-		return "", fmt.Errorf("error in signing the token for private key : %w", err)
+		log.Error().Err(err).Msg("error in signing the token for private key")
+		return "", errors.New("failed to login")
 	}
-
 	return token, nil
 }
 

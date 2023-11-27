@@ -581,7 +581,7 @@ package service
 // 			mockRepo := repository.NewMockUserRepo(mc)
 // 			mockRepo.EXPECT().ViewJobDetailsBy(gomock.Any(), gomock.Any()).Return(tt.mockRepoResponse()).AnyTimes()
 
-// 			s, _ := NewService(mockRepo, &auth.Auth{}, mockCache)
+// 			s, _ := NewService(mockRepo, &auth.Auth{}, &cache.Rdb{})
 // 			got, err := s.FilterJob(tt.args.ctx, tt.args.jobApplications)
 // 			if (err != nil) != tt.wantErr {
 // 				t.Errorf("Service.FilterJob() error = %v, wantErr %v", err, tt.wantErr)

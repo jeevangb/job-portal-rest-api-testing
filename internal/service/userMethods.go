@@ -3,11 +3,10 @@ package service
 import (
 	"context"
 	"errors"
-	"strconv"
-	"time"
-
 	"jeevan/jobportal/internal/models"
 	"jeevan/jobportal/internal/pkg"
+	"strconv"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/rs/zerolog/log"
@@ -15,22 +14,25 @@ import (
 
 func (s *Service) ResetPassword(ctx context.Context, resetData models.ResetPassword) error {
 	if resetData.NewPassword != resetData.ConfirmPassword {
-		return errors.New("new and confirm password is not match")
+		log.Info().Msg("failed to comapre password")
+		return errors.New("password does not match")
 	}
-
 	otp, err := s.rdb.CheckCacheOtp(ctx, resetData.Email)
 	if err != nil {
-		return errors.New("otp in cache not there")
+		return err
 	}
 	if otp != resetData.Otp {
+		log.Info().Msg("failed to compare the otp")
 		return errors.New("otp mismatch")
 	}
 	HashPassword, err := pkg.HashPassword(resetData.ConfirmPassword)
 	if err != nil {
-		return errors.New("failed to hash the password")
+		return err
 	}
-
-	s.UserRepo.UpdatePassword(ctx, resetData.Email, HashPassword)
+	err = s.UserRepo.UpdatePassword(ctx, resetData.Email, HashPassword)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -40,12 +42,12 @@ func (s *Service) CheckUserDataAndSendOtp(ctx context.Context, userData models.F
 		return err
 	}
 	if resetData.Dob != userData.Dob {
-		return errors.New("date of birth not exist")
+		log.Info().Msg("failed to compare date of birth")
+		return errors.New("invalid dob")
 	}
-
 	otpData, err := pkg.GenerateOneTimePassword(userData.Email)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to generate otp")
+		return err
 	}
 	err = s.rdb.AddToCacheRedis(ctx, userData.Email, otpData)
 	if err != nil {
@@ -61,14 +63,6 @@ func (s *Service) UserLogin(ctx context.Context, userData models.NewUser) (strin
 	if err != nil {
 		return "", err
 	}
-
-	// comaparing the password and hashed password
-	// err = pkg.CheckHashedPassword(userData.Password, userDetails.PasswordHash)
-	// if err != nil {
-	// 	log.Info().Err(err).Send()
-	// 	return "", errors.New("entered password is wrong")
-	// }
-
 	// setting up the claims
 	claims := jwt.RegisteredClaims{
 		Issuer:    "job portal project",
@@ -77,14 +71,11 @@ func (s *Service) UserLogin(ctx context.Context, userData models.NewUser) (strin
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 	}
-
 	token, err := s.auth.GenerateAuthToken(claims)
 	if err != nil {
 		return "", err
 	}
-
 	return token, nil
-
 }
 
 func (s *Service) UserSignup(ctx context.Context, userData models.NewUser) (models.User, error) {

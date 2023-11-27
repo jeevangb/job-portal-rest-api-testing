@@ -15,6 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// view job by id
 func (h *Handler) ViewJobByID(c *gin.Context) {
 	ctx := c.Request.Context()
 	traceid, ok := ctx.Value(middleware.TraceIDKey).(string)
@@ -31,7 +32,6 @@ func (h *Handler) ViewJobByID(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": http.StatusText(http.StatusUnauthorized)})
 		return
 	}
-
 	id := c.Param("id")
 
 	jid, err := strconv.ParseUint(id, 10, 64)
@@ -39,7 +39,6 @@ func (h *Handler) ViewJobByID(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 		return
 	}
-
 	jobData, err := h.Service.ViewJobById(ctx, jid)
 	if err != nil {
 		log.Error().Err(err).Str("trace id", traceid)
@@ -48,11 +47,10 @@ func (h *Handler) ViewJobByID(c *gin.Context) {
 		})
 		return
 	}
-
 	c.JSON(http.StatusOK, jobData)
-
 }
 
+// view all the jobs
 func (h *Handler) ViewAllJobs(c *gin.Context) {
 	ctx := c.Request.Context()
 	traceid, ok := ctx.Value(middleware.TraceIDKey).(string)
@@ -77,11 +75,10 @@ func (h *Handler) ViewAllJobs(c *gin.Context) {
 		})
 		return
 	}
-
 	c.JSON(http.StatusOK, jobDatas)
-
 }
 
+// view job details
 func (h *Handler) ViewJob(c *gin.Context) {
 	ctx := c.Request.Context()
 	traceid, ok := ctx.Value(middleware.TraceIDKey).(string)
@@ -98,7 +95,6 @@ func (h *Handler) ViewJob(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": http.StatusText(http.StatusUnauthorized)})
 		return
 	}
-
 	id := c.Param("id")
 
 	cid, err := strconv.ParseUint(id, 10, 64)
@@ -106,7 +102,6 @@ func (h *Handler) ViewJob(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 		return
 	}
-
 	jobData, err := h.Service.ViewJobByCid(ctx, cid)
 	if err != nil {
 		log.Error().Err(err).Str("trace id", traceid)
@@ -115,10 +110,10 @@ func (h *Handler) ViewJob(c *gin.Context) {
 		})
 		return
 	}
-
 	c.JSON(http.StatusOK, jobData)
-
 }
+
+// add job details
 func (h *Handler) AddJob(c *gin.Context) {
 	ctx := c.Request.Context()
 	traceid, ok := ctx.Value(middleware.TraceIDKey).(string)
@@ -135,16 +130,12 @@ func (h *Handler) AddJob(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": http.StatusText(http.StatusUnauthorized)})
 		return
 	}
-
 	id := c.Param("cid")
-
 	cid, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 	}
-
 	var jobData models.Hr
-
 	err = json.NewDecoder(c.Request.Body).Decode(&jobData)
 	if err != nil {
 		log.Error().Err(err).Str("trace id", traceid)
@@ -153,7 +144,6 @@ func (h *Handler) AddJob(c *gin.Context) {
 		})
 		return
 	}
-
 	jobs, err := h.Service.AddJobDetails(ctx, jobData, cid)
 	if err != nil {
 		log.Error().Err(err).Str("trace id", traceid)
@@ -162,13 +152,11 @@ func (h *Handler) AddJob(c *gin.Context) {
 		})
 		return
 	}
-
 	c.JSON(http.StatusOK, jobs)
-
 }
 
+// process job applications
 func (h *Handler) ProcessJobDetails(c *gin.Context) {
-
 	ctx := c.Request.Context()
 	traceid, ok := ctx.Value(middleware.TraceIDKey).(string)
 	if !ok {
@@ -185,7 +173,6 @@ func (h *Handler) ProcessJobDetails(c *gin.Context) {
 		return
 	}
 	var jobApplication []models.RespondJobApplicant
-
 	err := json.NewDecoder(c.Request.Body).Decode(&jobApplication)
 	if err != nil {
 		log.Error().Err(err).Str("trace id", traceid)
@@ -194,7 +181,6 @@ func (h *Handler) ProcessJobDetails(c *gin.Context) {
 		})
 		return
 	}
-
 	appicants, err := h.Service.FilterJob(ctx, jobApplication)
 	if err != nil {
 		log.Error().Err(err).Str("trace id", traceid)
@@ -203,7 +189,5 @@ func (h *Handler) ProcessJobDetails(c *gin.Context) {
 		})
 		return
 	}
-
 	c.JSON(http.StatusOK, appicants)
-
 }

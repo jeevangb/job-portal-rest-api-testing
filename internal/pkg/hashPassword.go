@@ -1,17 +1,21 @@
 package pkg
 
 import (
-	"fmt"
+	"errors"
 
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func HashPassword(password string) (string, error) {
+	if password == "" {
+		return "", errors.New("password could not be empty")
+	}
 	hashedPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return "", fmt.Errorf("error in hashing the password : %w", err)
+		log.Info().Msg("error in hashing the password")
+		return "", err
 	}
-	s := string(hashedPass[:])
 	return string(hashedPass), nil
 
 }

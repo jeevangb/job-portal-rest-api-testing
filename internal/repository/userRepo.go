@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"jeevan/jobportal/internal/models"
 
@@ -15,10 +14,11 @@ func (r *Repo) UpdatePassword(ctx context.Context, email string, resetPassword s
 	result := r.DB.Model(&models.User{}).Where("email=?", email).Update("PasswordHash", "resetPassword")
 	if result.Error != nil {
 		// Handle the error
-		fmt.Println("Error updating password:", result.Error)
+		log.Error().Err(result.Error).Msg("failed to update password in database")
+		return errors.New("password reset failed")
 	} else {
 		// Update successful
-		fmt.Println("Password updated successfully")
+		log.Info().Msg("password reset successfully")
 	}
 	return nil
 }
@@ -26,8 +26,9 @@ func (r *Repo) UpdatePassword(ctx context.Context, email string, resetPassword s
 func (r *Repo) CreateUser(ctx context.Context, UserDetails models.User) (models.User, error) {
 	result := r.DB.Create(&UserDetails)
 	if result.Error != nil {
-		log.Info().Err(result.Error).Send()
-		return models.User{}, errors.New("could not create the user")
+		//handle error
+		log.Error().Err(result.Error).Msg("failed to user data in database")
+		return models.User{}, errors.New("login falied")
 	}
 	return UserDetails, nil
 }
@@ -36,7 +37,7 @@ func (r *Repo) CheckEmail(ctx context.Context, email string) (models.User, error
 	var userDetails models.User
 	result := r.DB.Where("email = ?", email).First(&userDetails)
 	if result.Error != nil {
-		log.Info().Err(result.Error).Send()
+		log.Error().Err(result.Error).Msg("failed to check the email in database")
 		return models.User{}, errors.New("email not found")
 	}
 	return userDetails, nil

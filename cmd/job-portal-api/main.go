@@ -51,9 +51,6 @@ func StartApp() error {
 		return err
 	}
 
-	// Converting the decoded bytes to a string
-	// decodedPKString := string(decodedPVKBytes)
-
 	privatePEM := []byte(decodedPVKBytes)
 	publicPEM := []byte(decodedPKBytes)
 

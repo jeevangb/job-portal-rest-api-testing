@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/smtp"
+
+	"github.com/rs/zerolog/log"
 )
 
 func GenCaptchaCode() (string, error) {
@@ -34,7 +36,8 @@ func GenerateOneTimePassword(gmail string) (string, error) {
 
 	otp, err := GenCaptchaCode()
 	if err != nil {
-		return "", errors.New("error in creating the ramdom number")
+		log.Error().Err(err).Msg("failed to create random number")
+		return "", errors.New("could not generate otp")
 	}
 
 	// Message content
@@ -47,8 +50,8 @@ func GenerateOneTimePassword(gmail string) (string, error) {
 	smtpAddr := fmt.Sprintf("%s:%d", smtpServer, smtpPort)
 	err = smtp.SendMail(smtpAddr, auth, from, []string{to}, message)
 	if err != nil {
-		fmt.Println("Error sending email:", err)
-		return "", err
+		log.Error().Err(err).Msg("failure in sending otp to email")
+		return "", errors.New("failed to send otp")
 	}
 
 	fmt.Println("Email sent successfully!")
